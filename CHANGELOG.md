@@ -2,6 +2,8 @@
 
 ## Bug Fixes
 
+**Passive avatar scoring bug (target.ts)** — Players standing near the target as spectators were receiving scores when another player landed. The root cause was that `utils.triggers` fires on all clients, and standing players at ground level (y≈0.88) were within the trigger zone's y range. Fixed by adding a `localPlayerJumping` flag that is only set to `true` when the local player is detected at the arch jump platform height (y≈43). Scores are only recorded if this flag is set, making it impossible for passive observers to receive scores.
+
 **Multiplayer scoring bug (target.ts)** — When another player landed on the target, the score was incorrectly recorded and displayed for all other players in the scene. Fixed by adding a proximity check inside the landing trigger callback to verify the local player is actually on the target before recording a score.
 
 **Score display timer (target.ts)** — The score was disappearing from the screen too quickly due to `setInterval` being used instead of `setTimeout`, causing repeated timer callbacks to stack up. Switched to `setTimeout` so the score displays reliably for 5 seconds then clears once.
@@ -16,13 +18,13 @@
 
 ## Game Mechanics
 
-**Glider and double jump disabled (index.ts)** — Added `InputModifier` using the explicit mode syntax to disable gliding and double jumping scene-wide. This prevents players from using the glider to slow their descent and gain an unfair positional advantage over the target.
+**Glider and double jump disabled (index.ts)** — Added `InputModifier` using the explicit mode syntax to disable gliding and double jumping scene-wide. This prevents players from using the glider to slow their descent and gain an unfair positional advantage over the target. The modifier is applied via a one-time system that waits for the player entity to be fully initialized before running, which was required for the restriction to take effect in the deployed scene.
 
 ---
 
 ## UI Improvements
 
-**Score display (ui.tsx, target.ts)** — Completely redesigned the post-jump score display. The score now appears in a white panel with the Jump Zone logo centered above it. Text is split across two lines ("distance" / "[value] meters"), uses a sans-serif font, and the white panel only renders when a score is actively being shown.
+**Score display (ui.tsx, target.ts)** — Completely redesigned the post-jump score display. The score now appears in a white panel with the Jump Zone logo centered above it. Text is split across two lines ("distance is" / "[value] meters"), uses a sans-serif font, and the white panel only renders when a score is actively being shown. A minimum width was added to the panel to prevent "distance is" from wrapping across multiple lines.
 
 **Jump Zone logo (assets/scene/JumpZone.png)** — Rotated 90° clockwise so the logo renders correctly in the UI panel.
 
