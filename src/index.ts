@@ -11,20 +11,25 @@ import { createArchTeleport } from './archTeleport'
 import { artTimer, createArt, createArtTriggers } from './art'
 
 export function main() {
-  InputModifier.createOrReplace(engine.PlayerEntity, {
-    mode: {
-      $case: 'standard',
-      standard: {
-        disableAll: false,
-        disableWalk: false,
-        disableRun: false,
-        disableJog: false,
-        disableJump: false,
-        disableEmote: false,
-        disableDoubleJump: true,
-        disableGliding: true,
+  // Wait for player entity to be fully initialized before applying InputModifier
+  engine.addSystem(function applyInputModifier() {
+    if (!Transform.getOrNull(engine.PlayerEntity)) return
+    InputModifier.createOrReplace(engine.PlayerEntity, {
+      mode: {
+        $case: 'standard',
+        standard: {
+          disableAll: false,
+          disableWalk: false,
+          disableRun: false,
+          disableJog: false,
+          disableJump: false,
+          disableEmote: false,
+          disableDoubleJump: true,
+          disableGliding: true,
+        },
       },
-    },
+    })
+    engine.removeSystem(applyInputModifier)
   })
   target()
   createArchTeleport()

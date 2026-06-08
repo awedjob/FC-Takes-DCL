@@ -8,6 +8,9 @@ import { ACTION_ID, sendGenericAction } from './TheForge'
 
 export let score: string = ""
 
+// Flag: only true when the LOCAL player has entered the arch jump zone
+let localPlayerJumping = false
+
 export function target() {
     let playerPos = Vector3.create(0, 0, 0)
     
@@ -41,7 +44,17 @@ utils.triggers.addTrigger(
     1,
     [{ type: 'box', scale: {x:5,y:8,z:31}, position: Vector3.create(-17, 43.42, 15) }],
     () => {
-    console.log('Player entered the trigger Jumparea')
+        // Arch trigger world center: arch entity (16,0,16) + offset (-17, 43.42, 15) = (-1, 43.42, 31)
+        const localPos = Transform.get(engine.PlayerEntity).position
+        const dx = Math.abs(localPos.x - (-1))
+        const dy = Math.abs(localPos.y - 43.42)
+        const dz = Math.abs(localPos.z - 31)
+        if (dx < 2.5 && dy < 4 && dz < 15.5) {
+            localPlayerJumping = true
+            console.log('Local player entered jump zone - ready to record score')
+        } else {
+            console.log('Arch trigger fired by another player, not setting jump flag')
+        }
 
         utils.triggers.oneTimeTrigger(
             target,
@@ -49,21 +62,15 @@ utils.triggers.addTrigger(
             utils.LAYER_1,
             [{ type: 'box' ,scale: {x:30,y:2,z:30}}],
             () => {
-                const localPos = Transform.get(engine.PlayerEntity).position
-                const targetPos = Transform.get(target).position
-
-                // Only record if LOCAL player is actually on the target
-                // The trigger box is 30x2x30 centered at the target position
-                const dx = Math.abs(localPos.x - targetPos.x)
-                const dz = Math.abs(localPos.z - targetPos.z)
-                const dy = Math.abs(localPos.y - targetPos.y)
-
-                if (dx > 15 || dz > 15 || dy > 2) {
-                    console.log('Trigger fired by another player, ignoring')
+                // Only record if the local player actually went through the arch jump zone
+                if (!localPlayerJumping) {
+                    console.log('Score ignored - local player did not jump')
                     return
                 }
+                localPlayerJumping = false
 
-                playerPos = localPos
+                playerPos = Transform.get(engine.PlayerEntity).position
+                const targetPos = Transform.get(target).position
 const distanceFromCenter = compareToCenter(playerPos, targetPos)
 console.log('Player position:', playerPos)
 console.log('Distance from center:', distanceFromCenter)

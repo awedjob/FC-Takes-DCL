@@ -24,6 +24,7 @@ export function Leaderboard() {
                     alignItems: 'center',
                     padding: { top: 10, bottom: 10, left: 20, right: 20 },
                     display: score ? 'flex' : 'none',
+                    minWidth: 500,
                 }}
                 uiBackground={{ color: Color4.White() }}
             >
@@ -41,7 +42,7 @@ export function Leaderboard() {
                 <Label
                     value="distance is"
                     color={Color4.Red()}
-                    fontSize={80}
+                    fontSize={60}
                     font="sans-serif"
                     textAlign="middle-center"
                 />

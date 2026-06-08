@@ -193,6 +193,16 @@ app.get('/user-score/:wallet', async (req: any, res: any) => {
   }
 });
 
+app.delete('/reset-scores', (req: any, res: any) => {
+  db.run(`DELETE FROM scores`, [], (err: any) => {
+    if (err) {
+      console.error('Error resetting scores:', err);
+      return res.status(500).json({ valid: false, error: 'Failed to reset scores' });
+    }
+    console.log('Scores reset successfully');
+    return res.status(200).json({ valid: true, message: 'Scores reset successfully' });
+  });
+});
 
 app.get('/health', (req: any, res: any) => {
   res.status(200).json({ status: 'OK', message: 'Leaderboard server is running' });
