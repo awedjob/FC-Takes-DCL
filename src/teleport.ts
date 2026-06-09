@@ -4,7 +4,7 @@ import { movePlayerTo } from '~system/RestrictedActions'
 
 // Portal trigger zone center and half-extents
 const PORTAL_X = 31.5
-const PORTAL_Z = 31.0
+const PORTAL_Z = 36.5
 const PORTAL_RADIUS = 2.5
 
 let teleportCooldown = 0
@@ -14,7 +14,7 @@ export function createTeleport(parent: Entity) {
   MeshRenderer.setPlane(myEntity)
 
   Transform.create(myEntity, {
-    position: { x: 4, y: -1.0, z: -0.1 },
+    position: { x: 5.5, y: -4.25, z: -0.1 },
     scale: { x: 3.75, y: 3.75, z: 1 },
     parent: parent
   })

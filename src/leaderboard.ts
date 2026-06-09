@@ -1,13 +1,11 @@
 import {
   Entity,
-  GltfContainer,
   TextAlignMode,
   TextShape,
   Transform,
-  TransformTypeWithOptionals,
   engine,
+  Material,
   MeshRenderer,
-  Material
 } from '@dcl/sdk/ecs'
 import { Color4, 
         Quaternion, 
@@ -19,29 +17,7 @@ import { createTeleport } from './teleport'
 export class LeaderBoard {
   currentData: LeaderBoardRow[] = []
 
-  constructor(transform: TransformTypeWithOptionals, size: number) {
-
-const parent = engine.addEntity()
-    // MeshRenderer.setBox(parent)
-
-
-    Transform.create(parent, {
-      position: { x: 31.75, y: 3.0, z: 35 },
-      rotation: Quaternion.fromEulerDegrees(0, 90, 0),
-    })
-
-    const LdrBrdPlane = engine.addEntity()
-    MeshRenderer.setBox(LdrBrdPlane)
-    Material.setPbrMaterial(LdrBrdPlane, {
-      albedoColor: Color4.Black(),
-    })
-
-    Transform.create(LdrBrdPlane, {
-      position: { x: 0, y: 0, z: 0 },
-      rotation: Quaternion.fromEulerDegrees(0, 0, 0),
-      scale: { x: 13, y: 10, z: 0.1 },
-      parent: parent
-    })
+  constructor(parent: Entity, size: number) {
 
     createLogo(parent)
     createTeleport(parent)
@@ -87,7 +63,7 @@ export class LeaderBoardRow {
   constructor(parent: Entity, index: number, name: string, score: string) {
     this.nameText = engine.addEntity()
     Transform.create(this.nameText, {
-      position: Vector3.create(-3, (index * - 0.67) - 0.75, 0),
+      position: Vector3.create(-3, (index * - 0.67) - 1.5, 0),
       parent: parent
     })
     TextShape.create(this.nameText, {
@@ -101,7 +77,7 @@ export class LeaderBoardRow {
 
     this.scoreText = engine.addEntity()
     Transform.create(this.scoreText, {
-      position: Vector3.create(3, (index * - 0.67) - 0.75, 0),
+      position: Vector3.create(3, (index * - 0.67) - 1.5, 0),
       parent: parent
     })
     TextShape.create(this.scoreText, {

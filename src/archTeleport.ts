@@ -63,5 +63,5 @@ utils.triggers.addTrigger(
     () => {},
     Color3.Yellow()
   )
-      utils.triggers.enableDebugDraw(true)
+      // utils.triggers.enableDebugDraw(true)
 }

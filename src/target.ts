@@ -1,7 +1,7 @@
 import { AudioSource, ColliderLayer, engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
 import * as utils from '@dcl-sdk/utils'
 import { Color3, Vector3 } from '@dcl/sdk/math'
-import { LeaderBoard } from './leaderboard'
+import { createCombinedBoard } from './combinedBoard'
 import { fetchScores, publishScore } from './serverHandler'
 import { uiMenu } from './ui'
 import { ACTION_ID, sendGenericAction } from './TheForge'
@@ -22,17 +22,11 @@ GltfContainer.create(target, {
   invisibleMeshesCollisionMask: ColliderLayer.CL_NONE,
 })
 Transform.create(target, {
-  position: { x: 0, y: 0, z: 32 },
+  position: { x: 8, y: 0, z: 32 },
   scale: { x: 1, y: 1, z: 1 }
 })
 
-const leaderboard = new LeaderBoard(
-    {
-      position: Vector3.create(1, 2.5, 9.5),
-      scale: Vector3.create(1.845, 1.845, 6)
-    },
-    10
-  )
+const { leaderboard, winnersCircle } = createCombinedBoard()
 
 const arch = engine.addEntity()
 

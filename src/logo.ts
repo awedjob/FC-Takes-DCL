@@ -18,7 +18,7 @@ MeshRenderer.setPlane(myEntity)
 
 Transform.create(myEntity, {
     parent: parentEntity,
-    position: { x: 4, y: 2.75, z: -0.1 },
+    position: { x: 5.5, y: 2.75, z: -0.1 },
     scale: { x: 4, y: 4, z: 1 },
     rotation: Quaternion.fromEulerDegrees(0, 0, 0),
 })
@@ -46,7 +46,7 @@ MeshCollider.setPlane(forgeLogo)
 Transform.create(forgeLogo, {
     parent: parentEntity,
     rotation: Quaternion.fromEulerDegrees(0, 0, 0),
-    position: { x: -5.75, y: -2.25, z: -0.1 },
+    position: { x: -4.5, y: -5.25, z: -0.1 },
     scale: { x: 0.75, y: 0.75, z: 1 },
 })
 
