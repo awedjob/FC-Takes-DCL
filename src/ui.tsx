@@ -11,28 +11,26 @@ export const uiMenu = () => [
 export function Leaderboard() {
     return (
         <UiEntity uiTransform={{
-            width: '100%',
+            width: 'auto',
             height: 'auto',
-            justifyContent: 'center',
-            alignSelf: 'center',
             positionType: 'absolute',
-            position: { bottom: "5%" },
+            position: { top: "2%", right: 58 },
         }}>
             <UiEntity
                 uiTransform={{
                     flexDirection: 'column',
                     alignItems: 'center',
-                    padding: { top: 10, bottom: 10, left: 20, right: 20 },
+                    padding: { top: 5, bottom: 5, left: 10, right: 10 },
                     display: score ? 'flex' : 'none',
-                    minWidth: 500,
+                    minWidth: 250,
                 }}
                 uiBackground={{ color: Color4.White() }}
             >
                 <UiEntity
                     uiTransform={{
-                        width: 220,
-                        height: 220,
-                        margin: { bottom: 10 },
+                        width: 110,
+                        height: 110,
+                        margin: { bottom: 5 },
                     }}
                     uiBackground={{
                         textureMode: 'stretch',
@@ -42,14 +40,14 @@ export function Leaderboard() {
                 <Label
                     value="distance is"
                     color={Color4.Red()}
-                    fontSize={60}
+                    fontSize={30}
                     font="sans-serif"
                     textAlign="middle-center"
                 />
                 <Label
                     value={`${score} meters`}
                     color={Color4.Red()}
-                    fontSize={80}
+                    fontSize={40}
                     font="sans-serif"
                     textAlign="middle-center"
                 />

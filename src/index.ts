@@ -1,5 +1,5 @@
 import { Color4, Vector3 } from '@dcl/sdk/math'
-import { ColliderLayer, engine, GltfContainer, Material, MeshRenderer, Transform, VideoPlayer } from '@dcl/sdk/ecs'
+import { ColliderLayer, engine, GltfContainer, InputModifier, Material, MeshRenderer, Transform, VideoPlayer } from '@dcl/sdk/ecs'
 import { target } from './target'
 import { createTeleport } from './teleport'
 import { createLogo } from './logo'
@@ -9,6 +9,7 @@ import { uiMenu } from './ui'
 import { userForgeUI } from './TheForge'
 import { createArchTeleport } from './archTeleport'
 import { artTimer, createArt, createArtTriggers } from './art'
+import { createObstacles } from './obstacles'
 
 export function main() {
   // Temporary position logger - remove after fixing
@@ -20,6 +21,21 @@ export function main() {
       const p = Transform.getOrNull(engine.PlayerEntity)
       if (p) console.log('Player pos: x=' + p.position.x.toFixed(2) + ' z=' + p.position.z.toFixed(2))
     }
+  })
+
+  // Apply once as soon as PlayerEntity is available
+  const applyRestrictions = engine.addSystem((_dt: number) => {
+    if (!Transform.getOrNull(engine.PlayerEntity)) return
+    InputModifier.createOrReplace(engine.PlayerEntity, {
+      mode: (InputModifier.Mode.Standard as any)({
+        disableAll: false,
+        disableJump: false,
+        disableRun: false,
+        disableDoubleJump: true,
+        disableGliding: true,
+      }),
+    })
+    engine.removeSystem(applyRestrictions)
   })
 
   target()
@@ -36,6 +52,7 @@ export function main() {
   engine.addSystem(artTimer)
   createArtTriggers()
   createArt()
+  createObstacles()
 }
 
 function createBuilding() {

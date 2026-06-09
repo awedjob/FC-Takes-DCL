@@ -1,4 +1,4 @@
-import { AudioSource, engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
+import { AudioSource, ColliderLayer, engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
 import * as utils from '@dcl-sdk/utils'
 import { Color3, Vector3 } from '@dcl/sdk/math'
 import { LeaderBoard } from './leaderboard'
@@ -16,7 +16,11 @@ export function target() {
     
 // this can be named better but for now I don't want to break anything. It correctly calculates the distance from the center the way it is now.
 const target = engine.addEntity()
-GltfContainer.create(target, { src: 'models/target.glb' })
+GltfContainer.create(target, {
+  src: 'models/target.glb',
+  visibleMeshesCollisionMask: ColliderLayer.CL_PHYSICS,
+  invisibleMeshesCollisionMask: ColliderLayer.CL_NONE,
+})
 Transform.create(target, {
   position: { x: 0, y: 0, z: 32 },
   scale: { x: 1, y: 1, z: 1 }
