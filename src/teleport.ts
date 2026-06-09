@@ -1,7 +1,13 @@
-import { engine, Material, MeshRenderer, pointerEventsSystem, Transform, MaterialTransparencyMode, EasingFunction, Tween, TweenLoop, TweenSequence, Entity } from '@dcl/sdk/ecs'
+import { engine, executeTask, Material, MeshRenderer, pointerEventsSystem, Transform, MaterialTransparencyMode, EasingFunction, Tween, TweenLoop, TweenSequence, Entity } from '@dcl/sdk/ecs'
 import { Color3, Quaternion, Vector3 } from '@dcl/sdk/math'
-import * as utils from '@dcl-sdk/utils'
 import { movePlayerTo } from '~system/RestrictedActions'
+
+// Portal trigger zone center and half-extents
+const PORTAL_X = 31.5
+const PORTAL_Z = 31.0
+const PORTAL_RADIUS = 2.5
+
+let teleportCooldown = 0
 
 export function createTeleport(parent: Entity) {
   const myEntity = engine.addEntity()
@@ -47,34 +53,33 @@ export function createTeleport(parent: Entity) {
     transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
   })
 
-  // Separate unparented trigger entity at the world position of the portal
-  const triggerEntity = engine.addEntity()
-  Transform.create(triggerEntity, {
-    position: { x: 22.7, y: 2, z: 2.9 },
-  })
-
-  utils.triggers.addTrigger(
-    triggerEntity,
-    1,
-    1,
-    [{ type: 'box', scale: { x: 3, y: 5, z: 3 }, position: Vector3.create(0, 0, 0) }],
-    () => {
-      console.log('Leaderboard portal trigger fired!')
-      const playerTransform = Transform.getOrNull(engine.PlayerEntity)
-      if (!playerTransform) return
-      const p = playerTransform.position
-      const dist = Math.sqrt((p.x - 22.7) ** 2 + (p.z - 2.9) ** 2)
-      console.log('Distance to portal: ' + dist)
-      if (dist < 4) {
-        movePlayerTo({
-          newRelativePosition: Vector3.create(-11, 46, 18),
-          cameraTarget: Vector3.create(24.25, 30.0, 20.0),
-          avatarTarget: Vector3.create(-3.0, 46.0, 18),
+  let debugTimer = 0
+  engine.addSystem((dt: number) => {
+    if (teleportCooldown > 0) {
+      teleportCooldown -= dt
+      return
+    }
+    const t = Transform.getOrNull(engine.PlayerEntity)
+    if (!t) return
+    const dx = t.position.x - PORTAL_X
+    const dz = t.position.z - PORTAL_Z
+    const dist = Math.sqrt(dx * dx + dz * dz)
+    debugTimer += dt
+    if (debugTimer > 2) {
+      debugTimer = 0
+      console.log('Portal check: dist=' + dist.toFixed(2) + ' px=' + t.position.x.toFixed(2) + ' pz=' + t.position.z.toFixed(2))
+    }
+    if (dist < PORTAL_RADIUS) {
+      console.log('TELEPORTING! dist=' + dist.toFixed(2))
+      teleportCooldown = 3
+      executeTask(async () => {
+        await movePlayerTo({
+          newRelativePosition: Vector3.create(-27, 46, 34),
+          cameraTarget: Vector3.create(8.25, 30.0, 36.0),
+          avatarTarget: Vector3.create(-19.0, 46.0, 34),
         })
-      }
-    },
-    () => {},
-    Color3.Yellow()
-  )
-   //utils.triggers.enableDebugDraw(true)
+        console.log('movePlayerTo resolved')
+      })
+    }
+  })
 }

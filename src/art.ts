@@ -34,7 +34,7 @@ export function createArtTriggers() {
     // Create triggers for art-related interactions 
     let artTrigger01 = engine.addEntity()
     Transform.create(artTrigger01, {
-        position: { x: -9.5, y: 2, z: 46.5 },
+        position: { x: -25.5, y: 2, z: 62.5 },
         scale: { x: 2.75, y: 10, z: 1 }
     })
 
@@ -46,7 +46,7 @@ export function createArtTriggers() {
     
     let artTrigger02 = engine.addEntity()
     Transform.create(artTrigger02, {
-        position: { x: -9.5, y: 2, z: 18 },
+        position: { x: -25.5, y: 2, z: 34 },
         scale: { x: 2.75, y: 10, z: 1 }
     })
 
@@ -58,7 +58,7 @@ export function createArtTriggers() {
 
      let artTrigger03 = engine.addEntity()
     Transform.create(artTrigger03, {
-        position: { x: -10.5, y: 39, z: 32.3 },
+        position: { x: -26.5, y: 39, z: 48.3 },
         scale: { x: 2, y: 3, z: 7 }
     })
 
@@ -75,7 +75,7 @@ let artEntities = [
 
     // Floor #00 South Leg
     {
-        transform: {position: {x: -10, y: 3.1, z: 22.13}, 
+        transform: {position: {x: -26, y:3.1, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://app.manifold.xyz/c/bloomwoven-thought-fluttering-realities', 
@@ -91,7 +91,7 @@ let artEntities = [
 
     // Floor #01 South Leg
     {
-        transform: {position: {x: -10, y: 7, z: 22.13}, 
+        transform: {position: {x: -26, y:7, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://exchange.art/single/6wQfog9hqxYFc2DcNo1wH8NMn2GdHGTAiwf9kZkjBK1M', 
@@ -107,7 +107,7 @@ let artEntities = [
 
     // Floor #02 South Leg
     {
-        transform: {position: {x: -10, y: 11.5, z: 22.13}, 
+        transform: {position: {x: -26, y:11.5, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://exchange.art/single/FeuNmFPZEMwSLVHBhiLpxDPvyKJfeqHxyV6e2qYcajWC', 
@@ -123,7 +123,7 @@ let artEntities = [
 
         // Floor #03 South Leg
     {
-        transform: {position: {x: -10, y: 15.5, z: 22.13}, 
+        transform: {position: {x: -26, y:15.5, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://www.syky.com/piece/BASE/0xec3832f85d547de2e22e66314b6f7d07519c67ed/3000668/gothic-bloom-apparition-in-this-dress-i-speak-in-tongues', 
@@ -139,7 +139,7 @@ let artEntities = [
 
         // Floor #04 South Leg
     {
-        transform: {position: {x: -10, y: 18, z: 22.13}, 
+        transform: {position: {x: -26, y:18, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://www.transient.xyz/mint/base-creators', 
@@ -155,7 +155,7 @@ let artEntities = [
 
         // Floor #05 South Leg
     {
-        transform: {position: {x: -10, y: 23, z: 22.13}, 
+        transform: {position: {x: -26, y:23, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://exchange.art/single/2KVdF94sY7xcNZy1s4LYSYZ3oJo3FzXF9LhQ4E65LYbH', 
@@ -171,7 +171,7 @@ let artEntities = [
 
         // Floor #06 South Leg
     {
-        transform: {position: {x: -10, y: 26, z: 22.13}, 
+        transform: {position: {x: -26, y:26, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://highlight.xyz/mint/base:0x8FB8d3Ab682997Ae8006b7D72974E48DeB16BF43:0', 
@@ -187,7 +187,7 @@ let artEntities = [
 
         // Floor #07 South Leg
     {
-        transform: {position: {x: -10, y: 29, z: 22.13}, 
+        transform: {position: {x: -26, y:29, z: 38.13}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://objkt.com/tokens/KT1Nn81b1r4D2uBxX2M1SNCEWC6YKU1wFnR2/1', 
@@ -205,7 +205,7 @@ let artEntities = [
 
         // East Facing Center Gallery
     {
-        transform: {position: {x: -10, y: 32.5, z: 32}, 
+        transform: {position: {x: -26, y:32.5, z: 48},
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://exchange.art/single/6yrtbSwnVJTkSbv3FQxvKznzbDsHneHUJW6apQZ2AV5i', 
@@ -221,7 +221,7 @@ let artEntities = [
 
         // West Facing Center Gallery
     {
-        transform: {position: {x: -10, y: 35, z: 32}, 
+        transform: {position: {x: -26, y:35, z: 48},
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://exchange.art/single/42iQDj1wPBx9swDw3TNrKufTaE94UVBh6Yh1JJLq3hxa', 
@@ -239,7 +239,7 @@ let artEntities = [
 
     // Floor #00 North Leg
     {
-        transform: {position: {x: -10, y: 3.1, z: 42.6}, 
+        transform: {position: {x: -26, y:3.1, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://objkt.com/tokens/KT1Nn81b1r4D2uBxX2M1SNCEWC6YKU1wFnR2/0', 
@@ -255,7 +255,7 @@ let artEntities = [
 
     // Floor #01 North Leg
     {
-        transform: {position: {x: -10, y: 6.25, z: 42.6}, 
+        transform: {position: {x: -26, y:6.25, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://zora.co/coin/base:0x295ae049d08fde69d677a10a16490522dec408fd?referrer=0x4dd4512c786a569f9faf05a82ee616a13fe24732', 
@@ -271,7 +271,7 @@ let artEntities = [
 
     // Floor #02 North Leg
     {
-        transform: {position: {x: -10, y: 11.5, z: 42.6}, 
+        transform: {position: {x: -26, y:11.5, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://objkt.com/tokens/KT1MQm9a16ZkKhu7SdxdnFm8GwtqSnGXpCvF/0', 
@@ -287,7 +287,7 @@ let artEntities = [
 
         // Floor #03 North Leg
     {
-        transform: {position: {x: -10, y: 15.5, z: 42.6}, 
+        transform: {position: {x: -26, y:15.5, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://zora.co/coin/base:0x749325903af76ac17b78622ba7c6690a5c034316?referrer=0x4dd4512c786a569f9faf05a82ee616a13fe24732', 
@@ -303,7 +303,7 @@ let artEntities = [
 
         // Floor #04 North Leg
     {
-        transform: {position: {x: -10, y: 18, z: 42.6}, 
+        transform: {position: {x: -26, y:18, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://www.transient.xyz/mint/base-creators', 
@@ -319,7 +319,7 @@ let artEntities = [
 
         // Floor #05 North Leg
     {
-        transform: {position: {x: -10, y: 23, z: 42.6}, 
+        transform: {position: {x: -26, y:23, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://highlight.xyz/mint/base:0x4b54DffD86Aa71895AA9C505ACf8a95aBDfc5419', 
@@ -335,7 +335,7 @@ let artEntities = [
 
         // Floor #06 North Leg
     {
-        transform: {position: {x: -10, y: 25.5, z: 42.6}, 
+        transform: {position: {x: -26, y:25.5, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://highlight.xyz/mint/base:0x8FB8d3Ab682997Ae8006b7D72974E48DeB16BF43:0', 
@@ -351,7 +351,7 @@ let artEntities = [
 
         // Floor #07 North Leg
     {
-        transform: {position: {x: -10, y: 29, z: 42.6}, 
+        transform: {position: {x: -26, y:29, z: 58.6}, 
         scale: {x: 1, y: 1, z: 1}},
         artwork: [
             {link: 'https://www.syky.com/piece/BASE/0xec3832f85d547de2e22e66314b6f7d07519c67ed/3000666/seer-of-the-shattered-pattern-pin-me-to-the-cross-stitch', 

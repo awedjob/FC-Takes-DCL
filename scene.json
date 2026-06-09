@@ -24,10 +24,15 @@
       "-133,91",
       "-132,91",
       "-131,91",
+      "-130,91",
+      "-134,90",
       "-132,90",
-      "-131,90"
+      "-131,90",
+      "-130,90",
+      "-132,89",
+      "-131,89"
     ],
-    "base": "-132,90"
+    "base": "-131,89"
   },
   "spawnPoints": [
     {
@@ -35,16 +40,16 @@
       "default": true,
       "position": {
         "x": [
-          29,
-          32
+          -2,
+          2
         ],
         "y": [
-          1,
-          1
+          0,
+          0
         ],
         "z": [
-          14,
-          17
+          0,
+          4
         ]
       },
       "cameraTarget": {
@@ -66,7 +71,8 @@
   ],
   "featureToggles": {
     "voiceChat": "enabled",
-    "portableExperiences": "disabled"
+    "portableExperiences": "disabled",
+    "nearbyVoiceChat": "enabled"
   },
   "skyboxConfig": {
     "fixedTime": 86400
@@ -75,5 +81,6 @@
     "origin": "creator-hub",
     "projectId": "7344ee40-1e4c-4a88-ae62-ec5520df752f"
   },
-  "rating": "T"
+  "rating": "T",
+  "creator": "0xE1eEdbd1e08478707C794e7e8B1EE623f5fa6D64"
 }

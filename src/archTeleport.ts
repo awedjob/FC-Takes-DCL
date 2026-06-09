@@ -8,7 +8,7 @@ const myEntity = engine.addEntity()
 MeshRenderer.setBox(myEntity)
 
 Transform.create(myEntity, {
-	position: { x: -10, y: 3, z: 32 },
+	position: { x: -26, y: 3, z: 48 },
     scale: { x: 0, y: 5, z: 5 },
 })
 
@@ -51,17 +51,17 @@ utils.triggers.addTrigger(
     const playerTransform = Transform.getOrNull(engine.PlayerEntity)
     if (!playerTransform) return
     const p = playerTransform.position
-    const dist = Math.sqrt((p.x - (-10)) ** 2 + (p.z - 32) ** 2)
+    const dist = Math.sqrt((p.x - (-26)) ** 2 + (p.z - 48) ** 2)
     if (dist < 4) {
         movePlayerTo({
-            newRelativePosition: Vector3.create(-9, 50, 32),
-            cameraTarget: Vector3.create(-16, 55.0, 40.0),
-            avatarTarget: Vector3.create(-9.0, 50.0, 18),
+            newRelativePosition: Vector3.create(-25, 50, 48),
+            cameraTarget: Vector3.create(-32, 55.0, 56.0),
+            avatarTarget: Vector3.create(-25.0, 50.0, 34),
         })
     }
 },
     () => {},
     Color3.Yellow()
   )
-    //   utils.triggers.enableDebugDraw(true)
+      utils.triggers.enableDebugDraw(true)
 }

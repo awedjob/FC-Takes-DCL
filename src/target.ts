@@ -18,7 +18,7 @@ export function target() {
 const target = engine.addEntity()
 GltfContainer.create(target, { src: 'models/target.glb' })
 Transform.create(target, {
-  position: { x: 16, y: 0, z: 16 },
+  position: { x: 0, y: 0, z: 32 },
   scale: { x: 1, y: 1, z: 1 }
 })
 
@@ -33,7 +33,7 @@ const leaderboard = new LeaderBoard(
 const arch = engine.addEntity()
 
 Transform.create(arch, {
-  position: { x: 16, y: 0, z: 16 },
+  position: { x: 0, y: 0, z: 32 },
   scale: { x: 1, y: 1, z: 1 }
 })
 
@@ -44,11 +44,11 @@ utils.triggers.addTrigger(
     1,
     [{ type: 'box', scale: {x:5,y:8,z:31}, position: Vector3.create(-17, 43.42, 15) }],
     () => {
-        // Arch trigger world center: arch entity (16,0,16) + offset (-17, 43.42, 15) = (-1, 43.42, 31)
+        // Arch trigger world center: arch entity (0,0,32) + offset (-17, 43.42, 15) = (-17, 43.42, 47)
         const localPos = Transform.get(engine.PlayerEntity).position
-        const dx = Math.abs(localPos.x - (-1))
+        const dx = Math.abs(localPos.x - (-17))
         const dy = Math.abs(localPos.y - 43.42)
-        const dz = Math.abs(localPos.z - 31)
+        const dz = Math.abs(localPos.z - 47)
         if (dx < 2.5 && dy < 4 && dz < 15.5) {
             localPlayerJumping = true
             console.log('Local player entered jump zone - ready to record score')

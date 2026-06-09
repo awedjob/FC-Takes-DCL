@@ -26,8 +26,8 @@ const parent = engine.addEntity()
 
 
     Transform.create(parent, {
-      position: { x: 25.5, y: 3.0, z: 5.75 },
-      rotation: Quaternion.fromEulerDegrees(0, 135, 0),
+      position: { x: 31.75, y: 3.0, z: 35 },
+      rotation: Quaternion.fromEulerDegrees(0, 90, 0),
     })
 
     const LdrBrdPlane = engine.addEntity()

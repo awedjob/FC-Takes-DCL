@@ -6,5 +6,6 @@
  */
 export enum EntityNames {
   Admin_Tools = "Admin Tools",
+  Restrict_Actions = "Restrict Actions",
   Video_Screen = "Video Screen",
 } 
