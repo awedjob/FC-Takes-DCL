@@ -23,9 +23,13 @@ export function main() {
     }
   })
 
-  // Apply once as soon as PlayerEntity is available
-  function applyRestrictions(_dt: number) {
+  // Re-apply every 3 seconds so block-actions.ts can't override it
+  let restrictionTimer = 0
+  engine.addSystem((dt: number) => {
     if (!Transform.getOrNull(engine.PlayerEntity)) return
+    restrictionTimer += dt
+    if (restrictionTimer < 3) return
+    restrictionTimer = 0
     InputModifier.createOrReplace(engine.PlayerEntity, {
       mode: (InputModifier.Mode.Standard as any)({
         disableAll: false,
@@ -35,9 +39,7 @@ export function main() {
         disableGliding: true,
       }),
     })
-    engine.removeSystem(applyRestrictions)
-  }
-  engine.addSystem(applyRestrictions)
+  })
 
   target()
   createArchTeleport()
