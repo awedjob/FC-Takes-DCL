@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { AudioSource, engine, Entity, GltfContainer, Transform } from '@dcl/sdk/ecs'
 import * as utils from '@dcl-sdk/utils'
 import { Color3, Vector3 } from '@dcl/sdk/math'

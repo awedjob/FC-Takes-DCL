@@ -116,8 +116,8 @@ export function createObstacles() {
     { start: Vector3.create(BOX_X_MIN, 25, 28), end: Vector3.create(BOX_X_MAX, 25, 28), speed: 6, minSpeed: 3,  maxSpeed: 14, radius: 0.80,  color: Color3.create(0.9, 0.1, 0.9), respawn: 1.8 },
     { start: Vector3.create(BOX_X_MIN,  8, 36), end: Vector3.create(BOX_X_MAX,  8, 36), speed: 9, minSpeed: 5,  maxSpeed: 18, radius: 0.40,  color: Color3.create(0.1, 1.0, 0.7), respawn: 1.0 },
     // West → East (2 additional)
-    { start: Vector3.create(BOX_X_MIN, 33, 31), end: Vector3.create(BOX_X_MAX, 33, 31), speed: 7, radius: 1.00,  color: Color3.create(1.0, 0.3, 0.3), respawn: 2.1 },
-    { start: Vector3.create(BOX_X_MIN, 12, 26), end: Vector3.create(BOX_X_MAX, 12, 26), speed: 8, radius: 0.55,  color: Color3.create(0.2, 0.9, 1.0), respawn: 1.3 },
+    { start: Vector3.create(BOX_X_MIN, 33, 31), end: Vector3.create(BOX_X_MAX, 33, 31), speed: 7, minSpeed: 4, maxSpeed: 15, radius: 1.00,  color: Color3.create(1.0, 0.3, 0.3), respawn: 2.1 },
+    { start: Vector3.create(BOX_X_MIN, 12, 26), end: Vector3.create(BOX_X_MAX, 12, 26), speed: 8, minSpeed: 4, maxSpeed: 16, radius: 0.55,  color: Color3.create(0.2, 0.9, 1.0), respawn: 1.3 },
   ]
 
   for (const d of crossDefs) {

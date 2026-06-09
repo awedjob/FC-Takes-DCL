@@ -24,7 +24,7 @@ export function main() {
   })
 
   // Apply once as soon as PlayerEntity is available
-  const applyRestrictions = engine.addSystem((_dt: number) => {
+  function applyRestrictions(_dt: number) {
     if (!Transform.getOrNull(engine.PlayerEntity)) return
     InputModifier.createOrReplace(engine.PlayerEntity, {
       mode: (InputModifier.Mode.Standard as any)({
@@ -36,7 +36,8 @@ export function main() {
       }),
     })
     engine.removeSystem(applyRestrictions)
-  })
+  }
+  engine.addSystem(applyRestrictions)
 
   target()
   createArchTeleport()
