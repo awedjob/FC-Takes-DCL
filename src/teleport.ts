@@ -67,10 +67,10 @@ export function createTeleport(parent: Entity) {
     debugTimer += dt
     if (debugTimer > 2) {
       debugTimer = 0
-      console.log('Portal check: dist=' + dist.toFixed(2) + ' px=' + t.position.x.toFixed(2) + ' pz=' + t.position.z.toFixed(2))
+      // console.log('Portal check: dist=' + dist.toFixed(2) + ' px=' + t.position.x.toFixed(2) + ' pz=' + t.position.z.toFixed(2))
     }
     if (dist < PORTAL_RADIUS) {
-      console.log('TELEPORTING! dist=' + dist.toFixed(2))
+      // console.log('TELEPORTING! dist=' + dist.toFixed(2))
       teleportCooldown = 3
       executeTask(async () => {
         await movePlayerTo({

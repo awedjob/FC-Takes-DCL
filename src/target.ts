@@ -79,8 +79,8 @@ utils.triggers.addTrigger(
                 playerPos = Transform.get(engine.PlayerEntity).position
                 const targetPos = Transform.get(target).position
 const distanceFromCenter = compareToCenter(playerPos, targetPos)
-console.log('Player position:', playerPos)
-console.log('Distance from center:', distanceFromCenter)
+// console.log('Player position:', playerPos)
+// console.log('Distance from center:', distanceFromCenter)
 publishScore(distanceFromCenter, leaderboard)
 fetchScores(leaderboard)
 sendGenericAction(ACTION_ID, [

@@ -19,7 +19,7 @@ export function main() {
     if (logTimer > 2) {
       logTimer = 0
       const p = Transform.getOrNull(engine.PlayerEntity)
-      if (p) console.log('Player pos: x=' + p.position.x.toFixed(2) + ' z=' + p.position.z.toFixed(2))
+      // if (p) console.log('Player pos: x=' + p.position.x.toFixed(2) + ' z=' + p.position.z.toFixed(2))
     }
   })
 
