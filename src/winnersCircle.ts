@@ -33,7 +33,7 @@ export class WinnersCircle {
     // Single tall background for entire thumbnail column
     const thumbnailBg = engine.addEntity()
     Transform.create(thumbnailBg, {
-      position: Vector3.create(7.8, 2.125, -0.09),
+      position: Vector3.create(4, 2.125, -0.09),
       scale: Vector3.create(1.2, 8.5, 1),
       parent: parent,
     })
@@ -90,7 +90,7 @@ class WinnersCircleRow {
 
     this.scoreText = engine.addEntity()
     Transform.create(this.scoreText, {
-      position: Vector3.create(-1.5, y, -0.1),
+      position: Vector3.create(-4, y, -0.1),
       parent: parent,
     })
     TextShape.create(this.scoreText, {
@@ -104,7 +104,7 @@ class WinnersCircleRow {
 
     this.weekText = engine.addEntity()
     Transform.create(this.weekText, {
-      position: Vector3.create(2.5, y, -0.1),
+      position: Vector3.create(-0.5, y, -0.1),
       parent: parent,
     })
     TextShape.create(this.weekText, {
@@ -118,7 +118,7 @@ class WinnersCircleRow {
 
     this.thumbnail = engine.addEntity()
     Transform.create(this.thumbnail, {
-      position: Vector3.create(7.8, y, -0.1),
+      position: Vector3.create(4, y, -0.1),
       scale: Vector3.create(0.65, 0.65, 1),
       parent: parent,
     })
