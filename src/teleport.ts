@@ -3,8 +3,8 @@ import { Color3, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { movePlayerTo } from '~system/RestrictedActions'
 
 // Portal trigger zone center and half-extents
-const PORTAL_X = 31.5
-const PORTAL_Z = 36.5
+const PORTAL_X = 31.72
+const PORTAL_Z = 33.56
 const PORTAL_RADIUS = 2.5
 
 let teleportCooldown = 0

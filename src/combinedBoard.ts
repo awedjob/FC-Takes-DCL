@@ -22,7 +22,7 @@ export function createCombinedBoard(): CombinedBoardResult {
   // Single parent — centered between former board positions (z=40 and z=24)
   const parent = engine.addEntity()
   Transform.create(parent, {
-    position: { x: 31.75, y: 3.0, z: 32 },
+    position: { x: 31.75, y: 3.0, z: 29 },
     rotation: Quaternion.fromEulerDegrees(0, 90, 0),
   })
 
@@ -31,8 +31,8 @@ export function createCombinedBoard(): CombinedBoardResult {
   MeshRenderer.setBox(bg)
   Material.setPbrMaterial(bg, { albedoColor: Color4.Black() })
   Transform.create(bg, {
-    position: { x: -1.5, y: 0, z: 0 },
-    scale: { x: 28.5, y: 16, z: 0.1 },
+    position: { x: -3, y: 0, z: 0 },
+    scale: { x: 25.5, y: 16, z: 0.1 },
     parent: parent,
   })
 
@@ -77,8 +77,8 @@ export function createCombinedBoard(): CombinedBoardResult {
   // Two-column layout: image (left, right-justified) + text (right, left-justified) at center line x=-5
   const prizeThumbnail = engine.addEntity()
   Transform.create(prizeThumbnail, {
-    position: Vector3.create(-6.25, 1.6, -0.1),
-    scale: Vector3.create(1.5, 1.5, 1),
+    position: Vector3.create(-6.15, 1.8, -0.1),
+    scale: Vector3.create(1.75, 1.75, 1),
     parent: parent,
   })
   MeshRenderer.setPlane(prizeThumbnail)
@@ -88,7 +88,7 @@ export function createCombinedBoard(): CombinedBoardResult {
 
   const prizeName = engine.addEntity()
   Transform.create(prizeName, {
-    position: Vector3.create(-5, 1.6, -0.1),
+    position: Vector3.create(-4.9, 1.8, -0.1),
     parent: parent,
   })
   TextShape.create(prizeName, {
