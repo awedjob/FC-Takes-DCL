@@ -421,13 +421,13 @@ app.listen(PORT, HOST, () => {
   console.log(`🚀 Leaderboard server running on port ${PORT}`);
   console.log(`📊 Database: leaderboard.db`);
   console.log(`🌐 Health check: http://0.0.0.0:${PORT}/health`);
-  console.log(`⏰ Weekly winner scheduler initialized (every Sunday 13:59 UTC)`);
+  console.log(`⏰ Weekly winner scheduler initialized (every Sunday 23:59 UTC)`);
 });
 
 // Schedule weekly winner finalization
-// Runs every Sunday at 13:59 UTC
+// Runs every Sunday at 23:59 UTC
 const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
-cron.schedule('59 13 * * 0', () => {
+cron.schedule('59 23 * * 0', () => {
   console.log(`\n📋 [CRON] Finalizing weekly winner...`);
 
   // Call the finalize-week endpoint with internal admin key
