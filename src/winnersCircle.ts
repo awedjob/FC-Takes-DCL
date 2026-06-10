@@ -33,7 +33,7 @@ export class WinnersCircle {
     // Single tall background for entire thumbnail column
     const thumbnailBg = engine.addEntity()
     Transform.create(thumbnailBg, {
-      position: Vector3.create(7.8, 3.0, -0.11),
+      position: Vector3.create(7.8, 3.0, -0.09),
       scale: Vector3.create(1.2, 8.5, 1),
       parent: parent,
     })
