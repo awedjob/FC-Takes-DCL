@@ -2,6 +2,7 @@ import {
   engine,
   Entity,
   Material,
+  MaterialTransparencyMode,
   MeshRenderer,
   TextAlignMode,
   TextShape,
@@ -30,8 +31,8 @@ export function createCombinedBoard(): CombinedBoardResult {
   MeshRenderer.setBox(bg)
   Material.setPbrMaterial(bg, { albedoColor: Color4.Black() })
   Transform.create(bg, {
-    position: { x: 0, y: 0, z: 0 },
-    scale: { x: 31.5, y: 16, z: 0.1 },
+    position: { x: -1.5, y: 0, z: 0 },
+    scale: { x: 28.5, y: 16, z: 0.1 },
     parent: parent,
   })
 
@@ -49,7 +50,7 @@ export function createCombinedBoard(): CombinedBoardResult {
   // (section local y=-4.5 → combined y≈-1.5). All positions relative to parent.
   const prizeLabel = engine.addEntity()
   Transform.create(prizeLabel, {
-    position: Vector3.create(-6.5, 3.2, -0.1),
+    position: Vector3.create(-4.5, 3.1, -0.1),
     parent: parent,
   })
   TextShape.create(prizeLabel, {
@@ -58,12 +59,25 @@ export function createCombinedBoard(): CombinedBoardResult {
     textColor: Color4.create(1.0, 1.0, 0.5, 1),
     width: 10,
     height: 2,
-    textAlign: TextAlignMode.TAM_MIDDLE_LEFT,
+    textAlign: TextAlignMode.TAM_MIDDLE_CENTER,
   })
 
+  // Dark gray background plane behind prize section
+  const prizeBackground = engine.addEntity()
+  Transform.create(prizeBackground, {
+    position: Vector3.create(-4.5, 2.15, -0.09),
+    scale: Vector3.create(5.76, 3.15, 1),
+    parent: parent,
+  })
+  MeshRenderer.setPlane(prizeBackground)
+  Material.setPbrMaterial(prizeBackground, {
+    albedoColor: Color4.create(0.3, 0.3, 0.3, 1),
+  })
+
+  // Two-column layout: image (left, right-justified) + text (right, left-justified) at center line x=-5
   const prizeThumbnail = engine.addEntity()
   Transform.create(prizeThumbnail, {
-    position: Vector3.create(-6.5, 1.5, -0.1),
+    position: Vector3.create(-6.25, 1.6, -0.1),
     scale: Vector3.create(1.5, 1.5, 1),
     parent: parent,
   })
@@ -74,7 +88,7 @@ export function createCombinedBoard(): CombinedBoardResult {
 
   const prizeName = engine.addEntity()
   Transform.create(prizeName, {
-    position: Vector3.create(-4, 1.5, -0.1),
+    position: Vector3.create(-5, 1.6, -0.1),
     parent: parent,
   })
   TextShape.create(prizeName, {
@@ -103,6 +117,7 @@ export function createCombinedBoard(): CombinedBoardResult {
         texture: Material.Texture.Common({ src: imageUrl }),
         emissiveTexture: Material.Texture.Common({ src: imageUrl }),
         emissiveIntensity: 0.8,
+        transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
       })
     }
   }
