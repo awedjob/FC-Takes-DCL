@@ -6,6 +6,7 @@ import {
   engine,
   MeshRenderer,
   Material,
+  MaterialTransparencyMode,
 } from '@dcl/sdk/ecs'
 import { Color4, Vector3 } from '@dcl/sdk/math'
 
@@ -35,17 +36,18 @@ export class WinnersCircle {
     }
   }
 
-  updateBoard(winnerData: { name: string; score: string; week: string; prizeImageUrl?: string }[]) {
+  updateBoard(winnerData: { name: string; score: string; week: string; prizeImageUrl?: string; prizeName?: string }[]) {
     for (let i = 0; i < this.rows.length; i++) {
       if (i < winnerData.length) {
         this.rows[i].updateValue(
           winnerData[i].name,
           winnerData[i].score,
           winnerData[i].week,
-          winnerData[i].prizeImageUrl ?? ''
+          winnerData[i].prizeImageUrl ?? '',
+          winnerData[i].prizeName ?? ''
         )
       } else {
-        this.rows[i].updateValue('----', '----', '----', '')
+        this.rows[i].updateValue('----', '----', '----', '', '')
       }
     }
   }
@@ -56,6 +58,8 @@ class WinnersCircleRow {
   private scoreText: Entity
   private weekText: Entity
   private thumbnail: Entity
+  private thumbnailBackground: Entity
+  private prizeNameText: Entity
 
   constructor(parent: Entity, index: number) {
     // 12 rows from y=5.83 down, step 0.67 — matches Leaderboard row positions exactly
@@ -68,30 +72,30 @@ class WinnersCircleRow {
     })
     TextShape.create(this.nameText, {
       text: '----',
-      fontSize: 5,
+      fontSize: 4.5,
       textColor: Color4.White(),
-      width: 14,
+      width: 12,
       height: 1.5,
       textAlign: TextAlignMode.TAM_MIDDLE_LEFT,
     })
 
     this.scoreText = engine.addEntity()
     Transform.create(this.scoreText, {
-      position: Vector3.create(0.5, y, -0.1),
+      position: Vector3.create(-1.5, y, -0.1),
       parent: parent,
     })
     TextShape.create(this.scoreText, {
       text: '----',
       fontSize: 4,
       textColor: Color4.Yellow(),
-      width: 6,
+      width: 5,
       height: 1.5,
       textAlign: TextAlignMode.TAM_MIDDLE_CENTER,
     })
 
     this.weekText = engine.addEntity()
     Transform.create(this.weekText, {
-      position: Vector3.create(4.5, y, -0.1),
+      position: Vector3.create(2.5, y, -0.1),
       parent: parent,
     })
     TextShape.create(this.weekText, {
@@ -101,6 +105,18 @@ class WinnersCircleRow {
       width: 6,
       height: 1.5,
       textAlign: TextAlignMode.TAM_MIDDLE_CENTER,
+    })
+
+    // Dark gray background behind thumbnail
+    this.thumbnailBackground = engine.addEntity()
+    Transform.create(this.thumbnailBackground, {
+      position: Vector3.create(7.8, y, -0.11),
+      scale: Vector3.create(1.2, 0.8, 1),
+      parent: parent,
+    })
+    MeshRenderer.setPlane(this.thumbnailBackground)
+    Material.setPbrMaterial(this.thumbnailBackground, {
+      albedoColor: Color4.create(0.3, 0.3, 0.3, 1),
     })
 
     this.thumbnail = engine.addEntity()
@@ -113,17 +129,34 @@ class WinnersCircleRow {
     Material.setPbrMaterial(this.thumbnail, {
       albedoColor: Color4.create(0.2, 0.2, 0.2, 1),
     })
+
+    // Prize name text (tooltip on hover effect)
+    this.prizeNameText = engine.addEntity()
+    Transform.create(this.prizeNameText, {
+      position: Vector3.create(7.8, y - 0.6, -0.1),
+      parent: parent,
+    })
+    TextShape.create(this.prizeNameText, {
+      text: '',
+      fontSize: 2.5,
+      textColor: Color4.White(),
+      width: 5,
+      height: 1,
+      textAlign: TextAlignMode.TAM_MIDDLE_CENTER,
+    })
   }
 
-  updateValue(name: string, score: string, week: string, prizeImageUrl: string) {
+  updateValue(name: string, score: string, week: string, prizeImageUrl: string, prizeName?: string) {
     TextShape.getMutable(this.nameText).text = name
     TextShape.getMutable(this.scoreText).text = score
     TextShape.getMutable(this.weekText).text = week
+    TextShape.getMutable(this.prizeNameText).text = prizeName ?? ''
     if (prizeImageUrl) {
       Material.setPbrMaterial(this.thumbnail, {
         texture: Material.Texture.Common({ src: prizeImageUrl }),
         emissiveTexture: Material.Texture.Common({ src: prizeImageUrl }),
         emissiveIntensity: 0.8,
+        transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
       })
     } else {
       Material.setPbrMaterial(this.thumbnail, {
