@@ -74,28 +74,9 @@ export function createCombinedBoard(): CombinedBoardResult {
     parent: parent,
   })
   MeshRenderer.setPlane(prizeBackground)
-  MeshCollider.setPlane(prizeBackground)
-
-  // Initial pointer events registration (required before data loads)
-  pointerEventsSystem.onPointerDown(
-    {
-      entity: prizeBackground,
-      opts: {
-        hoverText: 'Prize',
-        button: InputAction.IA_PRIMARY,
-      },
-    },
-    () => {
-      openExternalUrl({
-        url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
-      })
-    }
-  )
 
   Material.setPbrMaterial(prizeBackground, {
     albedoColor: Color4.create(0.3, 0.3, 0.3, 1),
-    emissiveColor: Color4.create(0.3, 0.3, 0.3, 1),
-    emissiveIntensity: 0.3,
   })
 
   // Two-column layout: image (left, right-justified) + text (right, left-justified) at center line x=-5
@@ -138,22 +119,6 @@ export function createCombinedBoard(): CombinedBoardResult {
   // ── Prize update helper ───────────────────────────────────────────────────
   function updateCurrentPrize(name: string, imageUrl: string) {
     TextShape.getMutable(prizeNameText).text = name
-
-    // Re-register pointer events to activate them (required like in Winners Circle)
-    pointerEventsSystem.onPointerDown(
-      {
-        entity: prizeBackground,
-        opts: {
-          hoverText: name || 'Prize',
-          button: InputAction.IA_PRIMARY,
-        },
-      },
-      () => {
-        openExternalUrl({
-          url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
-        })
-      }
-    )
 
     if (imageUrl) {
       Material.setPbrMaterial(prizeThumbnail, {
