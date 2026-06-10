@@ -1,14 +1,18 @@
 import {
   engine,
   Entity,
+  InputAction,
   Material,
   MaterialTransparencyMode,
+  MeshCollider,
   MeshRenderer,
+  pointerEventsSystem,
   TextAlignMode,
   TextShape,
   Transform,
 } from '@dcl/sdk/ecs'
 import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
+import { openExternalUrl } from '~system/RestrictedActions'
 import { LeaderBoard } from './leaderboard'
 import { WinnersCircle } from './winnersCircle'
 
@@ -82,6 +86,7 @@ export function createCombinedBoard(): CombinedBoardResult {
     parent: parent,
   })
   MeshRenderer.setPlane(prizeThumbnail)
+  MeshCollider.setPlane(prizeThumbnail)
   Material.setPbrMaterial(prizeThumbnail, {
     albedoColor: Color4.create(0.25, 0.25, 0.25, 1),
   })
@@ -112,6 +117,23 @@ export function createCombinedBoard(): CombinedBoardResult {
   // ── Prize update helper ───────────────────────────────────────────────────
   function updateCurrentPrize(name: string, imageUrl: string) {
     TextShape.getMutable(prizeName).text = name
+
+    // Update hover text and click handler with current prize name
+    pointerEventsSystem.onPointerDown(
+      {
+        entity: prizeThumbnail,
+        opts: {
+          hoverText: name,
+          button: InputAction.IA_PRIMARY,
+        },
+      },
+      () => {
+        openExternalUrl({
+          url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
+        })
+      }
+    )
+
     if (imageUrl) {
       Material.setPbrMaterial(prizeThumbnail, {
         texture: Material.Texture.Common({ src: imageUrl }),
