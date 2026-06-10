@@ -134,6 +134,7 @@ class WinnersCircleRow {
     TextShape.getMutable(this.weekText).text = week
     if (prizeImageUrl) {
       Material.setPbrMaterial(this.thumbnail, {
+        albedoColor: Color4.White(),
         texture: Material.Texture.Common({ src: prizeImageUrl }),
         emissiveTexture: Material.Texture.Common({ src: prizeImageUrl }),
         emissiveIntensity: 0.8,
