@@ -38,14 +38,13 @@ Transform.create(arch, {
   scale: { x: 1, y: 1, z: 1 }
 })
 
-// this will be a repeatable trigger. everytime they get to the ledge at the top of the arch it will make the target ready to be used.
+// Arch trigger - created at start
 utils.triggers.addTrigger(
     arch,
     1,
     1,
     [{ type: 'box', scale: {x:5,y:8,z:31}, position: Vector3.create(-17, 43.42, 15) }],
     () => {
-        // Arch trigger world center: arch entity (0,0,32) + offset (-17, 43.42, 15) = (-17, 43.42, 47)
         const localPos = Transform.get(engine.PlayerEntity).position
         const dx = Math.abs(localPos.x - (-17))
         const dy = Math.abs(localPos.y - 43.42)
@@ -57,71 +56,71 @@ utils.triggers.addTrigger(
             console.log('Arch trigger fired by another player, not setting jump flag')
         }
 
-        utils.triggers.oneTimeTrigger(
-            target,
-            utils.LAYER_2,
-            utils.LAYER_1,
-            [{ type: 'box' ,scale: {x:30,y:2,z:30}}],
+        // Create secondary trigger when arch is triggered
+        const secondaryTrigger = engine.addEntity()
+        Transform.create(secondaryTrigger, {
+            position: { x: 8, y: 3, z: 32 },
+            scale: { x: 1, y: 1, z: 1 }
+        })
+
+        utils.triggers.addTrigger(
+            secondaryTrigger,
+            1,
+            1,
+            [{ type: 'box', scale: {x:30,y:0.5,z:30} }],
             () => {
-                // Only record if the local player jumped AND passed through the secondary trigger
-                if (!localPlayerJumping) {
-                    console.log('Score ignored - local player did not jump')
-                    return
-                }
-                if (!passedSecondaryTrigger) {
-                    console.log('Score ignored - local player did not pass through secondary trigger')
-                    return
-                }
+                const localPos = Transform.get(engine.PlayerEntity).position
+                const dx = Math.abs(localPos.x - 8)
+                const dz = Math.abs(localPos.z - 32)
+                if (dx < 15 && dz < 15 && localPlayerJumping) {
+                    passedSecondaryTrigger = true
+                    console.log('Local player passed secondary trigger - confirmed falling')
 
-                localPlayerJumping = false
-                passedSecondaryTrigger = false
+                    // Remove secondary trigger since it's no longer needed
+                    engine.removeEntity(secondaryTrigger)
 
-                playerPos = Transform.get(engine.PlayerEntity).position
-                const targetPos = Transform.get(target).position
-const distanceFromCenter = compareToCenter(playerPos, targetPos)
-publishScore(distanceFromCenter, leaderboard)
-fetchScores(leaderboard)
-sendGenericAction(ACTION_ID, [
-  {id:"2838e6c9-f364-4ae2-bcff-d828eb92df76", value: distanceFromCenter},
-])
-sendGenericAction("action_1755279382754_b5azxqqq2", [])
-                
+                    // Create target trigger when secondary is triggered
+                    utils.triggers.oneTimeTrigger(
+                        target,
+                        utils.LAYER_2,
+                        utils.LAYER_1,
+                        [{ type: 'box' ,scale: {x:30,y:2,z:30}}],
+                        () => {
+                            if (!localPlayerJumping) {
+                                console.log('Score ignored - local player did not jump')
+                                return
+                            }
+                            if (!passedSecondaryTrigger) {
+                                console.log('Score ignored - local player did not pass through secondary trigger')
+                                return
+                            }
+
+                            localPlayerJumping = false
+                            passedSecondaryTrigger = false
+
+                            playerPos = Transform.get(engine.PlayerEntity).position
+                            const targetPos = Transform.get(target).position
+                            const distanceFromCenter = compareToCenter(playerPos, targetPos)
+                            publishScore(distanceFromCenter, leaderboard)
+                            fetchScores(leaderboard)
+                            sendGenericAction(ACTION_ID, [
+                              {id:"2838e6c9-f364-4ae2-bcff-d828eb92df76", value: distanceFromCenter},
+                            ])
+                            sendGenericAction("action_1755279382754_b5azxqqq2", [])
+                        },
+                        Color3.Yellow()
+                    )
+                }
             },
+            () => {},
             Color3.Yellow()
         )
-
     },
-    () => {
-
-    },
+    () => {},
     Color3.Yellow()
-  )
+)
 
-    // Secondary trigger at y=3 to confirm player is actually falling
-    const secondaryTrigger = engine.addEntity()
-    Transform.create(secondaryTrigger, {
-        position: { x: 8, y: 3, z: 32 },
-        scale: { x: 1, y: 1, z: 1 }
-    })
-
-    utils.triggers.addTrigger(
-        secondaryTrigger,
-        1,
-        1,
-        [{ type: 'box', scale: {x:30,y:2,z:30} }],
-        () => {
-            const localPos = Transform.get(engine.PlayerEntity).position
-            const dx = Math.abs(localPos.x - 8)
-            const dz = Math.abs(localPos.z - 32)
-            if (dx < 15 && dz < 15 && localPlayerJumping) {
-                passedSecondaryTrigger = true
-                console.log('Local player passed secondary trigger - confirmed falling')
-            }
-        },
-        () => {},
-        Color3.Yellow()
-    )
-    // utils.triggers.enableDebugDraw(true)
+utils.triggers.enableDebugDraw(true)
 
     // Fetch leaderboard on load and refresh every 30s
     fetchScores(leaderboard)
