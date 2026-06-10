@@ -11,13 +11,9 @@ let recviewingTime = 30
 
 
 export function artTimer(dt: number) {
-    // Update art-related entities or logic here
-    // console.log('Art timer running with dt:', dt)
     if (viewingArt) {
         timer += dt
-        console.log('Art timer running:', timer)
         if (timer > recviewingTime) {
-            console.log('Art viewing time exceeded:', timer)
             // Reset the timer and stop viewing art after 5 minutes
             timer = 0
             viewingArt = false

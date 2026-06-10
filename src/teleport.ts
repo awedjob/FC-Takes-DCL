@@ -53,7 +53,6 @@ export function createTeleport(parent: Entity) {
     transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
   })
 
-  let debugTimer = 0
   engine.addSystem((dt: number) => {
     if (teleportCooldown > 0) {
       teleportCooldown -= dt
@@ -64,13 +63,7 @@ export function createTeleport(parent: Entity) {
     const dx = t.position.x - PORTAL_X
     const dz = t.position.z - PORTAL_Z
     const dist = Math.sqrt(dx * dx + dz * dz)
-    debugTimer += dt
-    if (debugTimer > 2) {
-      debugTimer = 0
-      // console.log('Portal check: dist=' + dist.toFixed(2) + ' px=' + t.position.x.toFixed(2) + ' pz=' + t.position.z.toFixed(2))
-    }
     if (dist < PORTAL_RADIUS) {
-      // console.log('TELEPORTING! dist=' + dist.toFixed(2))
       teleportCooldown = 3
       executeTask(async () => {
         await movePlayerTo({
@@ -78,7 +71,6 @@ export function createTeleport(parent: Entity) {
           cameraTarget: Vector3.create(8.25, 30.0, 36.0),
           avatarTarget: Vector3.create(-19.0, 46.0, 34),
         })
-        console.log('movePlayerTo resolved')
       })
     }
   })
