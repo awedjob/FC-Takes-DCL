@@ -1,4 +1,5 @@
 import { LeaderBoard } from './leaderboard'
+import { WinnersCircle } from './winnersCircle'
 import { executeTask } from '@dcl/sdk/ecs'
 import { getPlayer } from '@dcl/sdk/src/players'
 import { signedFetch } from '~system/SignedFetch'
@@ -81,6 +82,61 @@ export function publishScore(score: number, leaderboard: LeaderBoard) {
       fetchScores(leaderboard)
     } catch (e) {
       console.log('error posting to server: ' + e)
+    }
+  })
+}
+
+// Fetch past Winners Circle entries and populate the WinnersCircle board
+export function fetchWinners(winnersCircle: WinnersCircle) {
+  executeTask(async () => {
+    try {
+      const response = await signedFetch({
+        url: serverBaseUrl + 'winners',
+        init: {
+          headers: { 'Content-Type': 'application/json' },
+          method: 'GET'
+        }
+      })
+
+      if (!response.body) throw new Error('Invalid response')
+      const json = JSON.parse(response.body)
+      console.log('Winners fetched:', json)
+      if (!json.valid) throw new Error('Validation failed')
+
+      const rows = (json.winners as any[]).map((w: any) => ({
+        name: w.name ?? '---',
+        score: w.score !== undefined ? String(w.score) : '---',
+        week: w.week ?? '---',
+        prizeImageUrl: w.prize_image_url ?? ''
+      }))
+
+      winnersCircle.updateBoard(rows)
+    } catch (e) {
+      console.log('Error fetching winners: ' + e)
+    }
+  })
+}
+
+// Fetch the current prize and call the update callback
+export function fetchCurrentPrize(onPrize: (name: string, imageUrl: string) => void) {
+  executeTask(async () => {
+    try {
+      const response = await signedFetch({
+        url: serverBaseUrl + 'current-prize',
+        init: {
+          headers: { 'Content-Type': 'application/json' },
+          method: 'GET'
+        }
+      })
+
+      if (!response.body) throw new Error('Invalid response')
+      const json = JSON.parse(response.body)
+      console.log('Current prize fetched:', json)
+      if (!json.valid || !json.prize) return
+
+      onPrize(json.prize.prize_name ?? '', json.prize.image_url ?? '')
+    } catch (e) {
+      console.log('Error fetching current prize: ' + e)
     }
   })
 }

@@ -2,7 +2,7 @@ import { AudioSource, ColliderLayer, engine, Entity, GltfContainer, Transform } 
 import * as utils from '@dcl-sdk/utils'
 import { Color3, Vector3 } from '@dcl/sdk/math'
 import { createCombinedBoard } from './combinedBoard'
-import { fetchScores, publishScore } from './serverHandler'
+import { fetchScores, publishScore, fetchWinners, fetchCurrentPrize } from './serverHandler'
 import { uiMenu } from './ui'
 import { ACTION_ID, sendGenericAction } from './TheForge'
 
@@ -26,7 +26,7 @@ Transform.create(target, {
   scale: { x: 1, y: 1, z: 1 }
 })
 
-const { leaderboard, winnersCircle } = createCombinedBoard()
+const { leaderboard, winnersCircle, updateCurrentPrize } = createCombinedBoard()
 
 const arch = engine.addEntity()
 
@@ -91,11 +91,23 @@ sendGenericAction("action_1755279382754_b5azxqqq2", [])
   )
     // utils.triggers.enableDebugDraw(true)
 
-    // refresh the leaderboard every 30 seconds (30000 milliseconds)
+    // Fetch leaderboard on load and refresh every 30s
     fetchScores(leaderboard)
-    utils.timers.setTimeout(() => {
+    utils.timers.setInterval(() => {
       fetchScores(leaderboard)
-    }, 10000)
+    }, 30000)
+
+    // Fetch Winners Circle data on load and refresh every 5 minutes
+    fetchWinners(winnersCircle)
+    fetchCurrentPrize((name, imageUrl) => {
+      updateCurrentPrize(name, imageUrl)
+    })
+    utils.timers.setInterval(() => {
+      fetchWinners(winnersCircle)
+      fetchCurrentPrize((name, imageUrl) => {
+        updateCurrentPrize(name, imageUrl)
+      })
+    }, 300000)
 
 }
 export function compareToCenter(posOne: Vector3, posTwo: Vector3): number {
