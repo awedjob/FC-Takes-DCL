@@ -87,6 +87,24 @@ export function createCombinedBoard(): CombinedBoardResult {
   })
   MeshRenderer.setPlane(prizeThumbnail)
   MeshCollider.setPlane(prizeThumbnail)
+
+  // Set up pointer events once (hover text will be updated dynamically)
+  pointerEventsSystem.onPointerDown(
+    {
+      entity: prizeThumbnail,
+      opts: {
+        hoverText: 'Prize',
+        button: InputAction.IA_PRIMARY,
+      },
+    },
+    () => {
+      openExternalUrl({
+        url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
+      })
+    }
+  )
+
+  // Set material after pointer events (with placeholder dark gray)
   Material.setPbrMaterial(prizeThumbnail, {
     albedoColor: Color4.create(0.25, 0.25, 0.25, 1),
   })
@@ -117,22 +135,6 @@ export function createCombinedBoard(): CombinedBoardResult {
   // ── Prize update helper ───────────────────────────────────────────────────
   function updateCurrentPrize(name: string, imageUrl: string) {
     TextShape.getMutable(prizeName).text = name
-
-    // Update hover text and click handler with current prize name
-    pointerEventsSystem.onPointerDown(
-      {
-        entity: prizeThumbnail,
-        opts: {
-          hoverText: name,
-          button: InputAction.IA_PRIMARY,
-        },
-      },
-      () => {
-        openExternalUrl({
-          url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
-        })
-      }
-    )
 
     if (imageUrl) {
       Material.setPbrMaterial(prizeThumbnail, {
