@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Jump Zone Admin</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0d0d;
+      color: #e0e0e0;
+      font-family: 'Segoe UI', sans-serif;
+      padding: 40px 20px;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+    h1 { color: #f5c518; font-size: 1.6rem; margin-bottom: 6px; }
+    h2 { color: #aaa; font-size: 1rem; font-weight: normal; margin-bottom: 32px; }
+    section {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 28px;
+    }
+    section h3 { color: #f5c518; font-size: 1rem; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.05em; }
+    label { display: block; font-size: 0.8rem; color: #888; margin-bottom: 4px; margin-top: 14px; }
+    label:first-of-type { margin-top: 0; }
+    input {
+      width: 100%;
+      background: #111;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #e0e0e0;
+      padding: 9px 12px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: #f5c518; }
+    input[type="password"] { letter-spacing: 0.1em; }
+    button {
+      margin-top: 20px;
+      width: 100%;
+      background: #f5c518;
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 11px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #ffd740; }
+    button:disabled { background: #555; color: #888; cursor: not-allowed; }
+    .result {
+      margin-top: 14px;
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      display: none;
+    }
+    .result.success { background: #1a3a1a; border: 1px solid #2d6a2d; color: #6fcf6f; }
+    .result.error   { background: #3a1a1a; border: 1px solid #6a2d2d; color: #cf6f6f; }
+    .preview-wrap { margin-top: 14px; text-align: center; display: none; }
+    .preview-wrap img { max-width: 120px; max-height: 120px; border-radius: 6px; border: 1px solid #444; }
+    .preview-wrap p { font-size: 0.75rem; color: #666; margin-top: 6px; }
+    hr { border: none; border-top: 1px solid #2a2a2a; margin: 8px 0 20px; }
+    .admin-key-note { font-size: 0.75rem; color: #555; margin-top: 8px; }
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Jump Zone Admin</h1>
+  <h2>Winners Circle management panel</h2>
+
+  <!-- SET CURRENT PRIZE -->
+  <section>
+    <h3>This Week's Prize</h3>
+    <label for="prize-admin-key">Admin Key</label>
+    <input type="password" id="prize-admin-key" placeholder="Your ADMIN_KEY">
+
+    <label for="prize-name">Prize Name</label>
+    <input type="text" id="prize-name" placeholder="e.g. Rare Wearable Hat">
+
+    <label for="prize-image">Prize Image URL</label>
+    <input type="text" id="prize-image" placeholder="https://..." oninput="previewImage()">
+
+    <div class="preview-wrap" id="prize-preview-wrap">
+      <img id="prize-preview-img" src="" alt="Prize preview">
+      <p>Image preview</p>
+    </div>
+
+    <label for="prize-week">Week Label</label>
+    <input type="text" id="prize-week" placeholder="e.g. 2026-W24" value="">
+
+    <button onclick="setPrize()">Set Prize</button>
+    <div class="result" id="prize-result"></div>
+  </section>
+
+  <hr style="border-color:#333; margin: 0 0 28px;">
+
+  <!-- ADD WINNER -->
+  <section>
+    <h3>Record Weekly Winner</h3>
+    <label for="winner-admin-key">Admin Key</label>
+    <input type="password" id="winner-admin-key" placeholder="Your ADMIN_KEY">
+
+    <label for="winner-wallet">Wallet / User ID</label>
+    <input type="text" id="winner-wallet" placeholder="0x... or DCL user ID">
+
+    <label for="winner-name">Display Name</label>
+    <input type="text" id="winner-name" placeholder="e.g. AwedJob">
+
+    <label for="winner-score">Score (distance from center)</label>
+    <input type="number" id="winner-score" placeholder="e.g. 1.234" step="0.001" min="0">
+
+    <label for="winner-week">Week</label>
+    <input type="text" id="winner-week" placeholder="e.g. 2026-W24">
+
+    <label for="winner-prize-name">Prize Name (optional)</label>
+    <input type="text" id="winner-prize-name" placeholder="e.g. Rare Wearable Hat">
+
+    <label for="winner-prize-image">Prize Image URL (optional)</label>
+    <input type="text" id="winner-prize-image" placeholder="https://...">
+
+    <button onclick="addWinner()">Record Winner</button>
+    <div class="result" id="winner-result"></div>
+  </section>
+
+  <!-- VIEW CURRENT PRIZE -->
+  <section>
+    <h3>Current Prize (live)</h3>
+    <button onclick="loadCurrentPrize()" style="margin-top:0;">Refresh</button>
+    <div id="current-prize-display" style="margin-top:14px; font-size:0.9rem; color:#aaa;">Click Refresh to load.</div>
+  </section>
+
+  <script>
+    const BASE = 'https://fartarget-production.up.railway.app'
+
+    function showResult(id, ok, msg) {
+      const el = document.getElementById(id)
+      el.className = 'result ' + (ok ? 'success' : 'error')
+      el.textContent = msg
+      el.style.display = 'block'
+    }
+
+    function previewImage() {
+      const url = document.getElementById('prize-image').value.trim()
+      const wrap = document.getElementById('prize-preview-wrap')
+      const img  = document.getElementById('prize-preview-img')
+      if (url) {
+        img.src = url
+        wrap.style.display = 'block'
+      } else {
+        wrap.style.display = 'none'
+      }
+    }
+
+    // Auto-fill current ISO week label
+    function currentWeekLabel() {
+      const now = new Date()
+      const jan4 = new Date(now.getFullYear(), 0, 4)
+      const startOfWeek1 = new Date(jan4)
+      startOfWeek1.setDate(jan4.getDate() - ((jan4.getDay() + 6) % 7))
+      const diff = now - startOfWeek1
+      const week = Math.floor(diff / (7 * 24 * 60 * 60 * 1000)) + 1
+      return now.getFullYear() + '-W' + String(week).padStart(2, '0')
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const wl = currentWeekLabel()
+      document.getElementById('prize-week').value = wl
+      document.getElementById('winner-week').value = wl
+    })
+
+    async function setPrize() {
+      const body = {
+        admin_key:  document.getElementById('prize-admin-key').value.trim(),
+        prize_name: document.getElementById('prize-name').value.trim(),
+        image_url:  document.getElementById('prize-image').value.trim(),
+        week_label: document.getElementById('prize-week').value.trim(),
+      }
+      if (!body.admin_key || !body.prize_name || !body.week_label) {
+        return showResult('prize-result', false, 'Admin key, prize name, and week label are required.')
+      }
+      try {
+        const r = await fetch(BASE + '/set-prize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const json = await r.json()
+        showResult('prize-result', json.valid, json.valid ? '✅ Prize updated successfully!' : '❌ ' + json.error)
+      } catch (e) {
+        showResult('prize-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    async function addWinner() {
+      const body = {
+        admin_key:       document.getElementById('winner-admin-key').value.trim(),
+        wallet:          document.getElementById('winner-wallet').value.trim(),
+        name:            document.getElementById('winner-name').value.trim(),
+        score:           parseFloat(document.getElementById('winner-score').value),
+        week:            document.getElementById('winner-week').value.trim(),
+        prize_name:      document.getElementById('winner-prize-name').value.trim(),
+        prize_image_url: document.getElementById('winner-prize-image').value.trim(),
+      }
+      if (!body.admin_key || !body.wallet || !body.name || isNaN(body.score) || !body.week) {
+        return showResult('winner-result', false, 'Admin key, wallet, name, score, and week are required.')
+      }
+      try {
+        const r = await fetch(BASE + '/add-winner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const json = await r.json()
+        showResult('winner-result', json.valid, json.valid ? '✅ Winner recorded!' : '❌ ' + json.error)
+      } catch (e) {
+        showResult('winner-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    async function loadCurrentPrize() {
+      const el = document.getElementById('current-prize-display')
+      el.textContent = 'Loading...'
+      try {
+        const r = await fetch(BASE + '/current-prize')
+        const json = await r.json()
+        if (json.valid && json.prize) {
+          const p = json.prize
+          el.innerHTML = `
+            <strong style="color:#f5c518">${p.prize_name || '(none)'}</strong><br>
+            Week: ${p.week_label || '—'}<br>
+            Image: ${p.image_url ? '<a href="'+p.image_url+'" target="_blank" style="color:#88aaff">'+p.image_url+'</a>' : '(none)'}<br>
+            <small style="color:#555">Updated: ${p.updated_at}</small>
+            ${p.image_url ? '<br><img src="'+p.image_url+'" style="margin-top:10px;max-width:100px;border-radius:6px;">' : ''}
+          `
+        } else {
+          el.textContent = 'No prize data found.'
+        }
+      } catch (e) {
+        el.textContent = 'Error: ' + e.message
+      }
+    }
+  </script>
+
+</body>
+</html>

@@ -7,8 +7,12 @@ import {
   MeshRenderer,
   Material,
   MaterialTransparencyMode,
+  InputAction,
+  MeshCollider,
+  pointerEventsSystem,
 } from '@dcl/sdk/ecs'
 import { Color4, Vector3 } from '@dcl/sdk/math'
+import { openExternalUrl } from '~system/RestrictedActions'
 
 export class WinnersCircle {
   private rows: WinnersCircleRow[] = []
@@ -48,17 +52,18 @@ export class WinnersCircle {
     }
   }
 
-  updateBoard(winnerData: { name: string; score: string; week: string; prizeImageUrl?: string }[]) {
+  updateBoard(winnerData: { name: string; score: string; week: string; prizeName?: string; prizeImageUrl?: string }[]) {
     for (let i = 0; i < this.rows.length; i++) {
       if (i < winnerData.length) {
         this.rows[i].updateValue(
           winnerData[i].name,
           winnerData[i].score,
           winnerData[i].week,
+          winnerData[i].prizeName ?? '',
           winnerData[i].prizeImageUrl ?? ''
         )
       } else {
-        this.rows[i].updateValue('----', '----', '----', '')
+        this.rows[i].updateValue('----', '----', '----', '', '')
       }
     }
   }
@@ -69,6 +74,7 @@ class WinnersCircleRow {
   private scoreText: Entity
   private weekText: Entity
   private thumbnail: Entity
+  private prizeName: string = ''
 
   constructor(parent: Entity, index: number) {
     // 12 rows from y=5.83 down, step 0.67 — matches Leaderboard row positions exactly
@@ -123,15 +129,52 @@ class WinnersCircleRow {
       parent: parent,
     })
     MeshRenderer.setPlane(this.thumbnail)
+    MeshCollider.setPlane(this.thumbnail)
+
+    // Set up pointer events for the prize thumbnail
+    pointerEventsSystem.onPointerDown(
+      {
+        entity: this.thumbnail,
+        opts: {
+          hoverText: 'Prize',
+          button: InputAction.IA_PRIMARY,
+        },
+      },
+      () => {
+        // Open Farcaster Pack collection
+        openExternalUrl({
+          url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
+        })
+      }
+    )
+
     Material.setPbrMaterial(this.thumbnail, {
       albedoColor: Color4.create(0.2, 0.2, 0.2, 1),
     })
   }
 
-  updateValue(name: string, score: string, week: string, prizeImageUrl: string) {
+  updateValue(name: string, score: string, week: string, prizeName: string, prizeImageUrl: string) {
     TextShape.getMutable(this.nameText).text = name
     TextShape.getMutable(this.scoreText).text = score
     TextShape.getMutable(this.weekText).text = week
+    this.prizeName = prizeName || 'Prize'
+
+    // Update hover text to show the prize name
+    pointerEventsSystem.onPointerDown(
+      {
+        entity: this.thumbnail,
+        opts: {
+          hoverText: this.prizeName,
+          button: InputAction.IA_PRIMARY,
+        },
+      },
+      () => {
+        openExternalUrl({
+          url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
+        })
+      }
+    )
+
     if (prizeImageUrl) {
       Material.setPbrMaterial(this.thumbnail, {
         albedoColor: Color4.White(),

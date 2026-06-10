@@ -11,6 +11,9 @@ export let score: string = ""
 // Flag: only true when the LOCAL player has entered the arch jump zone
 let localPlayerJumping = false
 
+// Flag: only true when the LOCAL player has passed through the secondary trigger (mid-fall)
+let passedSecondaryTrigger = false
+
 export function target() {
     let playerPos = Vector3.create(0, 0, 0)
     
@@ -60,12 +63,18 @@ utils.triggers.addTrigger(
             utils.LAYER_1,
             [{ type: 'box' ,scale: {x:30,y:2,z:30}}],
             () => {
-                // Only record if the local player actually went through the arch jump zone
+                // Only record if the local player jumped AND passed through the secondary trigger
                 if (!localPlayerJumping) {
                     console.log('Score ignored - local player did not jump')
                     return
                 }
+                if (!passedSecondaryTrigger) {
+                    console.log('Score ignored - local player did not pass through secondary trigger')
+                    return
+                }
+
                 localPlayerJumping = false
+                passedSecondaryTrigger = false
 
                 playerPos = Transform.get(engine.PlayerEntity).position
                 const targetPos = Transform.get(target).position
@@ -89,6 +98,31 @@ sendGenericAction("action_1755279382754_b5azxqqq2", [])
     },
     Color3.Yellow()
   )
+
+    // Secondary trigger at y=3 to confirm player is actually falling
+    const secondaryTrigger = engine.addEntity()
+    Transform.create(secondaryTrigger, {
+        position: { x: 8, y: 3, z: 32 },
+        scale: { x: 1, y: 1, z: 1 }
+    })
+
+    utils.triggers.addTrigger(
+        secondaryTrigger,
+        1,
+        1,
+        [{ type: 'box', scale: {x:30,y:2,z:30} }],
+        () => {
+            const localPos = Transform.get(engine.PlayerEntity).position
+            const dx = Math.abs(localPos.x - 8)
+            const dz = Math.abs(localPos.z - 32)
+            if (dx < 15 && dz < 15 && localPlayerJumping) {
+                passedSecondaryTrigger = true
+                console.log('Local player passed secondary trigger - confirmed falling')
+            }
+        },
+        () => {},
+        Color3.Yellow()
+    )
     // utils.triggers.enableDebugDraw(true)
 
     // Fetch leaderboard on load and refresh every 30s

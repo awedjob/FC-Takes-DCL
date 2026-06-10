@@ -107,6 +107,7 @@ export function fetchWinners(winnersCircle: WinnersCircle) {
         name: w.name ?? '---',
         score: w.score !== undefined ? String(w.score) : '---',
         week: w.week ?? '---',
+        prizeName: w.prize_name ?? 'Prize',
         prizeImageUrl: w.prize_image_url ?? ''
       }))
 

@@ -74,24 +74,12 @@ export function createCombinedBoard(): CombinedBoardResult {
     parent: parent,
   })
   MeshRenderer.setPlane(prizeBackground)
-  Material.setPbrMaterial(prizeBackground, {
-    albedoColor: Color4.create(0.3, 0.3, 0.3, 1),
-  })
+  MeshCollider.setPlane(prizeBackground)
 
-  // Two-column layout: image (left, right-justified) + text (right, left-justified) at center line x=-5
-  const prizeThumbnail = engine.addEntity()
-  Transform.create(prizeThumbnail, {
-    position: Vector3.create(-6.15, 1.8, -0.1),
-    scale: Vector3.create(1.75, 1.75, 1),
-    parent: parent,
-  })
-  MeshRenderer.setPlane(prizeThumbnail)
-  MeshCollider.setPlane(prizeThumbnail)
-
-  // Set up pointer events once (hover text will be updated dynamically)
+  // Initial pointer events registration (required before data loads)
   pointerEventsSystem.onPointerDown(
     {
-      entity: prizeThumbnail,
+      entity: prizeBackground,
       opts: {
         hoverText: 'Prize',
         button: InputAction.IA_PRIMARY,
@@ -104,17 +92,32 @@ export function createCombinedBoard(): CombinedBoardResult {
     }
   )
 
-  // Set material after pointer events (with placeholder dark gray)
-  Material.setPbrMaterial(prizeThumbnail, {
-    albedoColor: Color4.create(0.25, 0.25, 0.25, 1),
+  Material.setPbrMaterial(prizeBackground, {
+    albedoColor: Color4.create(0.3, 0.3, 0.3, 1),
+    emissiveColor: Color4.create(0.3, 0.3, 0.3, 1),
+    emissiveIntensity: 0.3,
   })
 
-  const prizeName = engine.addEntity()
-  Transform.create(prizeName, {
+  // Two-column layout: image (left, right-justified) + text (right, left-justified) at center line x=-5
+  const prizeThumbnail = engine.addEntity()
+  Transform.create(prizeThumbnail, {
+    position: Vector3.create(-6.15, 1.8, -0.1),
+    scale: Vector3.create(1.75, 1.75, 1),
+    parent: parent,
+  })
+  MeshRenderer.setPlane(prizeThumbnail)
+
+  // Set default material (updateCurrentPrize will override with texture when image loads)
+  Material.setPbrMaterial(prizeThumbnail, {
+    albedoColor: Color4.create(0.3, 0.3, 0.3, 1),
+  })
+
+  const prizeNameText = engine.addEntity()
+  Transform.create(prizeNameText, {
     position: Vector3.create(-4.9, 1.8, -0.1),
     parent: parent,
   })
-  TextShape.create(prizeName, {
+  TextShape.create(prizeNameText, {
     text: '----',
     fontSize: 4,
     textColor: Color4.White(),
@@ -134,7 +137,23 @@ export function createCombinedBoard(): CombinedBoardResult {
 
   // ── Prize update helper ───────────────────────────────────────────────────
   function updateCurrentPrize(name: string, imageUrl: string) {
-    TextShape.getMutable(prizeName).text = name
+    TextShape.getMutable(prizeNameText).text = name
+
+    // Re-register pointer events to activate them (required like in Winners Circle)
+    pointerEventsSystem.onPointerDown(
+      {
+        entity: prizeBackground,
+        opts: {
+          hoverText: name || 'Prize',
+          button: InputAction.IA_PRIMARY,
+        },
+      },
+      () => {
+        openExternalUrl({
+          url: 'https://decentraland.org/marketplace/collections/0xb0d0d31910da4a14d4e05a9d51b6e9a99a85d676',
+        })
+      }
+    )
 
     if (imageUrl) {
       Material.setPbrMaterial(prizeThumbnail, {
