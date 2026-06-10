@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
+const cron = require('node-cron');
 
 const app = express();
 app.use(cors({ origin: true }));
@@ -314,6 +315,101 @@ app.post('/add-winner', (req: any, res: any) => {
 
 // ── End Winners Circle endpoints ──────────────────────────────────────────────
 
+// ── Weekly Winner Automation ──────────────────────────────────────────────────
+
+// Helper: Get ISO week number from date
+function getISOWeek(date: Date): string {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+  const year = d.getUTCFullYear();
+  return `${year}-W${String(week).padStart(2, '0')}`;
+}
+
+// POST /finalize-week — automatically calculate and record the weekly winner
+// Called by cron job every Sunday at 13:59 UTC
+app.post('/finalize-week', (req: any, res: any) => {
+  const { admin_key } = req.body || {};
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+  if (admin_key !== ADMIN_KEY) {
+    return res.status(403).json({ valid: false, error: 'Unauthorized' });
+  }
+
+  const currentWeek = getISOWeek(new Date());
+  console.log(`⏰ Finalizing week: ${currentWeek}`);
+
+  // Get all past winners to exclude them
+  db.all(`SELECT wallet FROM winners`, [], (err: any, pastWinners: any) => {
+    if (err) {
+      console.error('Error fetching past winners:', err);
+      return res.status(500).json({ valid: false, error: 'Failed to fetch past winners' });
+    }
+
+    const excludedWallets = pastWinners.map((w: any) => w.wallet);
+
+    // Get all scores from this week, ordered by score (lowest = best), excluding past winners
+    const placeholders = excludedWallets.length > 0 ? excludedWallets.map(() => '?').join(',') : "'nonexistent'";
+    const query = `
+      SELECT wallet, name, score, timestamp
+      FROM scores
+      WHERE datetime(timestamp) >= datetime('now', 'start of week', '-6 days', 'utc')
+        AND datetime(timestamp) < datetime('now', 'start of week', '+1 days', 'utc')
+        AND wallet NOT IN (${placeholders})
+      ORDER BY score ASC
+      LIMIT 1
+    `;
+
+    db.get(query, excludedWallets, (err: any, topScore: any) => {
+      if (err) {
+        console.error('Error fetching top scorer:', err);
+        return res.status(500).json({ valid: false, error: 'Failed to fetch scores' });
+      }
+
+      if (!topScore) {
+        console.log(`❌ No eligible winner found for week ${currentWeek}`);
+        return res.status(200).json({ valid: true, message: 'No eligible winner this week' });
+      }
+
+      // Get current prize
+      db.get(`SELECT prize_name, image_url FROM current_prize WHERE id = 1`, [], (err: any, prize: any) => {
+        if (err) {
+          console.error('Error fetching current prize:', err);
+          return res.status(500).json({ valid: false, error: 'Failed to fetch prize' });
+        }
+
+        // Record the winner
+        db.run(
+          `INSERT INTO winners (wallet, name, score, week, prize_name, prize_image_url)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [topScore.wallet, topScore.name, topScore.score, currentWeek, prize?.prize_name || '', prize?.image_url || ''],
+          (err: any) => {
+            if (err) {
+              console.error('Error recording winner:', err);
+              return res.status(500).json({ valid: false, error: 'Failed to record winner' });
+            }
+
+            console.log(`🏆 Winner recorded: ${topScore.name} (${topScore.score}m) for week ${currentWeek}`);
+            return res.status(200).json({
+              valid: true,
+              message: 'Weekly winner finalized',
+              winner: {
+                name: topScore.name,
+                score: topScore.score,
+                week: currentWeek,
+                prize: prize?.prize_name || '(no prize set)'
+              }
+            });
+          }
+        );
+      });
+    });
+  });
+});
+
+// ── End Weekly Winner Automation ──────────────────────────────────────────────
+
 app.get('/health', (req: any, res: any) => {
   res.status(200).json({ status: 'OK', message: 'Leaderboard server is running' });
 });
@@ -325,8 +421,56 @@ app.listen(PORT, HOST, () => {
   console.log(`🚀 Leaderboard server running on port ${PORT}`);
   console.log(`📊 Database: leaderboard.db`);
   console.log(`🌐 Health check: http://0.0.0.0:${PORT}/health`);
+  console.log(`⏰ Weekly winner scheduler initialized (every Sunday 13:59 UTC)`);
 });
 
+// Schedule weekly winner finalization
+// Runs every Sunday at 13:59 UTC
+const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+cron.schedule('59 13 * * 0', () => {
+  console.log(`\n📋 [CRON] Finalizing weekly winner...`);
+
+  // Call the finalize-week endpoint with internal admin key
+  const http = require('http');
+  const data = JSON.stringify({ admin_key: ADMIN_KEY });
+
+  const options = {
+    hostname: 'localhost',
+    port: PORT,
+    path: '/finalize-week',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Content-Length': data.length,
+    },
+  };
+
+  const req = http.request(options, (res: any) => {
+    let body = '';
+    res.on('data', (chunk: any) => body += chunk);
+    res.on('end', () => {
+      try {
+        const json = JSON.parse(body);
+        if (json.valid && json.winner) {
+          console.log(`✅ [CRON] ${json.winner.name} won week ${json.winner.week}!`);
+        } else if (json.valid) {
+          console.log(`⚠️  [CRON] ${json.message}`);
+        } else {
+          console.error(`❌ [CRON] Error: ${json.error}`);
+        }
+      } catch (e) {
+        console.error(`❌ [CRON] Failed to parse response: ${e}`);
+      }
+    });
+  });
+
+  req.on('error', (error: any) => {
+    console.error(`❌ [CRON] Error calling /finalize-week: ${error.message}`);
+  });
+
+  req.write(data);
+  req.end();
+}, { timezone: 'UTC' });
 
 process.on('SIGINT', () => {
   console.log('\n Shutting down server...');
