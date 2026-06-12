@@ -125,8 +125,27 @@
     <label for="winner-prize-image">Prize Image URL (optional)</label>
     <input type="text" id="winner-prize-image" placeholder="https://...">
 
+    <label for="winner-won-at">Won At (optional — backdate past contests)</label>
+    <input type="text" id="winner-won-at" placeholder="e.g. 2025-08-15 12:00:00 (leave empty for now)">
+
     <button onclick="addWinner()">Record Winner</button>
     <div class="result" id="winner-result"></div>
+  </section>
+
+  <!-- DELETE WINNER -->
+  <section>
+    <h3>Delete Winner</h3>
+    <label for="delete-admin-key">Admin Key</label>
+    <input type="password" id="delete-admin-key" placeholder="Your ADMIN_KEY">
+
+    <label for="delete-wallet">Wallet / User ID</label>
+    <input type="text" id="delete-wallet" placeholder="0x... or DCL user ID">
+
+    <label for="delete-week">Week</label>
+    <input type="text" id="delete-week" placeholder="e.g. 2025-W33">
+
+    <button onclick="deleteWinner()">Delete Winner</button>
+    <div class="result" id="delete-result"></div>
   </section>
 
   <!-- VIEW CURRENT PRIZE -->
@@ -211,6 +230,8 @@
       if (!body.admin_key || !body.wallet || !body.name || isNaN(body.score) || !body.week) {
         return showResult('winner-result', false, 'Admin key, wallet, name, score, and week are required.')
       }
+      const wonAt = document.getElementById('winner-won-at').value.trim()
+      if (wonAt) body.won_at = wonAt
       try {
         const r = await fetch(BASE + '/add-winner', {
           method: 'POST',
@@ -221,6 +242,28 @@
         showResult('winner-result', json.valid, json.valid ? '✅ Winner recorded!' : '❌ ' + json.error)
       } catch (e) {
         showResult('winner-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    async function deleteWinner() {
+      const body = {
+        admin_key: document.getElementById('delete-admin-key').value.trim(),
+        wallet:    document.getElementById('delete-wallet').value.trim(),
+        week:      document.getElementById('delete-week').value.trim(),
+      }
+      if (!body.admin_key || !body.wallet || !body.week) {
+        return showResult('delete-result', false, 'Admin key, wallet, and week are required.')
+      }
+      try {
+        const r = await fetch(BASE + '/delete-winner', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const json = await r.json()
+        showResult('delete-result', json.valid, json.valid ? '✅ ' + json.message : '❌ ' + json.error)
+      } catch (e) {
+        showResult('delete-result', false, '❌ Network error: ' + e.message)
       }
     }
 

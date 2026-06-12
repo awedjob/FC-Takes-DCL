@@ -292,7 +292,7 @@ app.post('/set-prize', (req: any, res: any) => {
 // POST /add-winner — admin records a weekly winner
 // Body: { wallet, name, score, week, prize_name, prize_image_url, admin_key }
 app.post('/add-winner', (req: any, res: any) => {
-  const { wallet, name, score, week, prize_name, prize_image_url, admin_key } = req.body;
+  const { wallet, name, score, week, prize_name, prize_image_url, won_at, admin_key } = req.body;
   const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
   if (admin_key !== ADMIN_KEY) {
     return res.status(403).json({ valid: false, error: 'Unauthorized' });
@@ -300,15 +300,44 @@ app.post('/add-winner', (req: any, res: any) => {
   if (!wallet || !name || score === undefined || !week) {
     return res.status(400).json({ valid: false, error: 'Missing required fields: wallet, name, score, week' });
   }
+  // Optional won_at lets past contests be backdated so /winners (ordered by
+  // won_at DESC) places them chronologically instead of by insertion time
+  if (won_at && isNaN(Date.parse(won_at))) {
+    return res.status(400).json({ valid: false, error: 'won_at must be a valid date, e.g. 2025-08-15 12:00:00' });
+  }
   db.run(
-    `INSERT INTO winners (wallet, name, score, week, prize_name, prize_image_url) VALUES (?, ?, ?, ?, ?, ?)`,
-    [wallet, name, score, week, prize_name || null, prize_image_url || null],
+    `INSERT INTO winners (wallet, name, score, week, prize_name, prize_image_url, won_at)
+     VALUES (?, ?, ?, ?, ?, ?, COALESCE(?, CURRENT_TIMESTAMP))`,
+    [wallet, name, score, week, prize_name || null, prize_image_url || null, won_at || null],
     (err: any) => {
       if (err) {
         console.error('Error adding winner:', err);
         return res.status(500).json({ valid: false, error: 'Failed to add winner' });
       }
       return res.status(200).json({ valid: true, message: 'Winner recorded' });
+    }
+  );
+});
+
+// POST /delete-winner — admin tool to remove a winner row (e.g. to fix a bad entry)
+app.post('/delete-winner', (req: any, res: any) => {
+  const { wallet, week, admin_key } = req.body;
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+  if (admin_key !== ADMIN_KEY) {
+    return res.status(403).json({ valid: false, error: 'Unauthorized' });
+  }
+  if (!wallet || !week) {
+    return res.status(400).json({ valid: false, error: 'Missing required fields: wallet, week' });
+  }
+  db.run(
+    `DELETE FROM winners WHERE wallet = ? AND week = ?`,
+    [wallet, week],
+    function (this: any, err: any) {
+      if (err) {
+        console.error('Error deleting winner:', err);
+        return res.status(500).json({ valid: false, error: 'Failed to delete winner' });
+      }
+      return res.status(200).json({ valid: true, message: `Deleted ${this.changes} row(s)` });
     }
   );
 });
