@@ -142,7 +142,7 @@ utils.triggers.addTrigger(
     Color3.Yellow()
 )
 
-utils.triggers.enableDebugDraw(true)
+// utils.triggers.enableDebugDraw(true)
 
     // Fetch leaderboard on load and refresh every 30s
     fetchScores(leaderboard)
