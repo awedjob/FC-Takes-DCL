@@ -122,7 +122,14 @@ app.get('/get-scores', async (req: any, res: any) => {
 });
 
 // Publish a new score 
+// Wallets whose scores are never recorded (game creator/admin accounts)
+const EXEMPT_WALLETS = ['0xe1eedbd1e08478707c794e7e8b1ee623f5fa6d64'];
+
 app.post('/publish-score', async (req: any, res: any) => {
+  if (req.body && typeof req.body.wallet === 'string' &&
+      EXEMPT_WALLETS.includes(req.body.wallet.toLowerCase())) {
+    return res.status(200).json({ valid: true, message: 'Wallet exempt - score not recorded' });
+  }
   try {
     const { id, name, score, wallet } = req.body;
 
@@ -360,6 +367,29 @@ app.post('/add-winner', (req: any, res: any) => {
       }
       if (prize_name) rememberPrize(prize_name, prize_image_url || '');
       return res.status(200).json({ valid: true, message: 'Winner recorded' });
+    }
+  );
+});
+
+// POST /delete-score — admin tool to remove a player's leaderboard score(s)
+app.post('/delete-score', (req: any, res: any) => {
+  const { wallet, admin_key } = req.body;
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+  if (admin_key !== ADMIN_KEY) {
+    return res.status(403).json({ valid: false, error: 'Unauthorized' });
+  }
+  if (!wallet) {
+    return res.status(400).json({ valid: false, error: 'Missing required field: wallet' });
+  }
+  db.run(
+    `DELETE FROM scores WHERE LOWER(wallet) = LOWER(?)`,
+    [wallet],
+    function (this: any, err: any) {
+      if (err) {
+        console.error('Error deleting score:', err);
+        return res.status(500).json({ valid: false, error: 'Failed to delete score' });
+      }
+      return res.status(200).json({ valid: true, message: `Deleted ${this.changes} row(s)` });
     }
   );
 });

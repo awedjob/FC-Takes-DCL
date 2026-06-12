@@ -6,6 +6,10 @@ import { signedFetch } from '~system/SignedFetch'
 
 const serverBaseUrl = 'https://fartarget-production.up.railway.app/'
 
+// The game creator's scores are never recorded on the leaderboard — the score
+// UI still shows the jump distance locally, it just isn't published
+const EXEMPT_WALLETS = ['0xe1eedbd1e08478707c794e7e8b1ee623f5fa6d64']
+
 // Get top scores from server and update the leaderboard display
 export function fetchScores(leaderboard: LeaderBoard) {
   executeTask(async () => {
@@ -45,6 +49,11 @@ export function publishScore(score: number, leaderboard: LeaderBoard) {
 
     if (!userData) {
       console.log('Could not get player data — score not submitted')
+      return
+    }
+
+    if (EXEMPT_WALLETS.includes(userData.userId.toLowerCase())) {
+      console.log('Creator wallet is exempt — score not submitted')
       return
     }
 

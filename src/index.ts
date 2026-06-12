@@ -10,6 +10,7 @@ import { userForgeUI } from './TheForge'
 import { createArchTeleport } from './archTeleport'
 import { artTimer, createArt, createArtTriggers } from './art'
 import { createObstacles } from './obstacles'
+import { createParticleStream } from './particleStream'
 
 export function main() {
   // Avatar position logger
@@ -55,7 +56,11 @@ export function main() {
   engine.addSystem(artTimer)
   createArtTriggers()
   createArt()
-  createObstacles()
+  // Replaced by the particle stream — restore if dodging obstacles return
+  // createObstacles()
+
+  // Sight-blocking particle geyser over the target
+  createParticleStream()
 }
 
 function createBuilding() {
