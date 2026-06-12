@@ -12,6 +12,16 @@ import { artTimer, createArt, createArtTriggers } from './art'
 import { createObstacles } from './obstacles'
 
 export function main() {
+  // Avatar position logger
+  let logTimer = 0
+  engine.addSystem((dt: number) => {
+    logTimer += dt
+    if (logTimer > 2) {
+      logTimer = 0
+      const p = Transform.getOrNull(engine.PlayerEntity)
+      if (p) console.log('Avatar pos: x=' + p.position.x.toFixed(2) + ' y=' + p.position.y.toFixed(2) + ' z=' + p.position.z.toFixed(2))
+    }
+  })
 
   // Re-apply every 3 seconds so block-actions.ts can't override it
   let restrictionTimer = 0
