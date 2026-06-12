@@ -16,15 +16,15 @@ let passedSecondaryTrigger = false
 
 export function target() {
     let playerPos = Vector3.create(0, 0, 0)
-    
-// this can be named better but for now I don't want to break anything. It correctly calculates the distance from the center the way it is now.
-const target = engine.addEntity()
-GltfContainer.create(target, {
+
+// Target entity - always visible in the scene
+const targetEntity = engine.addEntity()
+GltfContainer.create(targetEntity, {
   src: 'models/target.glb',
   visibleMeshesCollisionMask: ColliderLayer.CL_PHYSICS,
   invisibleMeshesCollisionMask: ColliderLayer.CL_NONE,
 })
-Transform.create(target, {
+Transform.create(targetEntity, {
   position: { x: 8, y: 0, z: 32 },
   scale: { x: 1, y: 1, z: 1 }
 })
@@ -81,7 +81,7 @@ utils.triggers.addTrigger(
 
                     // Create target trigger when secondary is triggered
                     utils.triggers.oneTimeTrigger(
-                        target,
+                        targetEntity,
                         utils.LAYER_2,
                         utils.LAYER_1,
                         [{ type: 'box' ,scale: {x:30,y:2,z:30}}],
@@ -99,7 +99,7 @@ utils.triggers.addTrigger(
                             passedSecondaryTrigger = false
 
                             playerPos = Transform.get(engine.PlayerEntity).position
-                            const targetPos = Transform.get(target).position
+                            const targetPos = Transform.get(targetEntity).position
                             const distanceFromCenter = compareToCenter(playerPos, targetPos)
                             publishScore(distanceFromCenter, leaderboard)
                             fetchScores(leaderboard)
