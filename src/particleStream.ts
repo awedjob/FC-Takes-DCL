@@ -103,15 +103,6 @@ function launch(p: ParticleState) {
   p.vy = LAUNCH_VY_MIN + Math.random() * (LAUNCH_VY_MAX - LAUNCH_VY_MIN)
   p.vz = vr * Math.sin(dir)
   p.active = true
-
-  const color = randomPurpleWhite()
-  Material.setPbrMaterial(p.entity, {
-    albedoColor: Color4.create(color.r, color.g, color.b, 0.9),
-    emissiveColor: color,
-    emissiveIntensity: 1.2,
-    castShadows: false,
-    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
-  })
 }
 
 export function createParticleStream() {
@@ -122,6 +113,17 @@ export function createParticleStream() {
     Transform.create(entity, {
       position: Vector3.create(CENTER_X, 0, CENTER_Z),
       scale: Vector3.Zero(),
+    })
+
+    // Each pool slot keeps a fixed color for life — rewriting materials on
+    // every relaunch (~100/s) caused renderer churn and GC micro-stutters
+    const color = randomPurpleWhite()
+    Material.setPbrMaterial(entity, {
+      albedoColor: Color4.create(color.r, color.g, color.b, 0.9),
+      emissiveColor: color,
+      emissiveIntensity: 1.2,
+      castShadows: false,
+      transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
     })
 
     const p: ParticleState = {
@@ -175,7 +177,10 @@ export function createParticleStream() {
       // Droplet hits the ground — back into the pool
       if (p.y <= 0) {
         p.active = false
-        Transform.getMutable(p.entity).scale = Vector3.Zero()
+        const hidden = Transform.getMutable(p.entity)
+        hidden.scale.x = 0
+        hidden.scale.y = 0
+        hidden.scale.z = 0
         inactivePool.push(p)
         continue
       }
