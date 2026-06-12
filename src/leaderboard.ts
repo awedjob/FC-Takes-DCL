@@ -58,16 +58,17 @@ export class LeaderBoard {
     // Legend at the bottom of the board explaining the star marker
     const legendText = engine.addEntity()
     Transform.create(legendText, {
-      position: Vector3.create(-2, -5.25, -0.1),
+      // x matches the player name column's left anchor (titleText x -2 + row x -3)
+      position: Vector3.create(-5, -5.25, -0.1),
       parent: parent
     })
     TextShape.create(legendText, {
       text: '★ Retired Champions may play but are ineligible to win this week.',
-      fontSize: 2.5,
+      fontSize: 2,
       textColor: Color4.Yellow(),
       width: 20,
       height: 2,
-      textAlign: TextAlignMode.TAM_MIDDLE_CENTER,
+      textAlign: TextAlignMode.TAM_MIDDLE_LEFT,
     })
   }
 
