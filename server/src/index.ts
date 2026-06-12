@@ -51,7 +51,32 @@ db.serialize(() => {
   // Seed an empty current prize row if none exists
   db.run(`INSERT OR IGNORE INTO current_prize (id, prize_name, image_url, week_label)
     VALUES (1, 'TBD', '', '')`);
+
+  // Prize catalog: remembers every prize name + image URL ever used so
+  // recurring prizes can be re-selected in the admin panel
+  db.run(`CREATE TABLE IF NOT EXISTS prize_catalog (
+    prize_name TEXT PRIMARY KEY,
+    image_url TEXT,
+    last_used DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
 });
+
+// Upsert a prize into the catalog (called whenever a prize is set or a winner
+// is recorded with a prize attached)
+function rememberPrize(prizeName: string, imageUrl: string) {
+  if (!prizeName || prizeName === 'TBD') return;
+  db.run(
+    `INSERT INTO prize_catalog (prize_name, image_url, last_used)
+     VALUES (?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(prize_name) DO UPDATE SET
+       image_url = CASE WHEN excluded.image_url != '' THEN excluded.image_url ELSE prize_catalog.image_url END,
+       last_used = CURRENT_TIMESTAMP`,
+    [prizeName, imageUrl || ''],
+    (err: any) => {
+      if (err) console.error('Error updating prize catalog:', err);
+    }
+  );
+}
 
 // Get top scores 
 // 'LIMIT 10' to get the top 10 scores
@@ -287,7 +312,23 @@ app.post('/set-prize', (req: any, res: any) => {
         console.error('Error setting prize:', err);
         return res.status(500).json({ valid: false, error: 'Failed to set prize' });
       }
+      rememberPrize(prize_name, image_url || '');
       return res.status(200).json({ valid: true, message: 'Prize updated' });
+    }
+  );
+});
+
+// GET /prize-catalog — all prizes ever used, most recently used first
+app.get('/prize-catalog', (req: any, res: any) => {
+  db.all(
+    `SELECT prize_name, image_url, last_used FROM prize_catalog ORDER BY last_used DESC`,
+    [],
+    (err: any, rows: any) => {
+      if (err) {
+        console.error('Error fetching prize catalog:', err);
+        return res.status(500).json({ valid: false, error: 'Failed to fetch prize catalog' });
+      }
+      return res.status(200).json({ valid: true, prizes: rows });
     }
   );
 });
@@ -317,6 +358,7 @@ app.post('/add-winner', (req: any, res: any) => {
         console.error('Error adding winner:', err);
         return res.status(500).json({ valid: false, error: 'Failed to add winner' });
       }
+      if (prize_name) rememberPrize(prize_name, prize_image_url || '');
       return res.status(200).json({ valid: true, message: 'Winner recorded' });
     }
   );

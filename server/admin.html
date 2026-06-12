@@ -38,6 +38,17 @@
       transition: border-color 0.2s;
     }
     input:focus { border-color: #f5c518; }
+    select {
+      width: 100%;
+      background: #111;
+      border: 1px solid #444;
+      border-radius: 6px;
+      color: #e0e0e0;
+      padding: 9px 12px;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    select:focus { border-color: #f5c518; }
     input[type="password"] { letter-spacing: 0.1em; }
     button {
       margin-top: 20px;
@@ -92,6 +103,9 @@
     <label for="prize-admin-key">Admin Key</label>
     <input type="password" id="prize-admin-key" placeholder="Your ADMIN_KEY">
 
+    <label for="prize-reuse">Reuse a Previous Prize (optional)</label>
+    <select id="prize-reuse" onchange="reusePrize('prize')"><option value="">— pick a past prize —</option></select>
+
     <label for="prize-name">Prize Name</label>
     <input type="text" id="prize-name" placeholder="e.g. Rare Wearable Hat">
 
@@ -130,6 +144,9 @@
 
     <label for="winner-week">Week</label>
     <input type="text" id="winner-week" placeholder="e.g. 2026-W24">
+
+    <label for="winner-prize-reuse">Reuse a Previous Prize (optional)</label>
+    <select id="winner-prize-reuse" onchange="reusePrize('winner')"><option value="">— pick a past prize —</option></select>
 
     <label for="winner-prize-name">Prize Name (optional)</label>
     <input type="text" id="winner-prize-name" placeholder="e.g. Rare Wearable Hat">
@@ -204,7 +221,46 @@
       const wl = currentWeekLabel()
       document.getElementById('prize-week').value = wl
       document.getElementById('winner-week').value = wl
+      loadPrizeCatalog()
     })
+
+    // Catalog of every prize used before, for the reuse dropdowns
+    let prizeCatalog = []
+
+    async function loadPrizeCatalog() {
+      try {
+        const r = await fetch(BASE + '/prize-catalog')
+        const json = await r.json()
+        if (!json.valid || !json.prizes) return
+        prizeCatalog = json.prizes
+        for (const prefix of ['prize', 'winner-prize']) {
+          const sel = document.getElementById(prefix + '-reuse')
+          if (!sel) continue
+          sel.innerHTML = '<option value="">— pick a past prize —</option>'
+          prizeCatalog.forEach((p, i) => {
+            const opt = document.createElement('option')
+            opt.value = i
+            opt.textContent = p.prize_name
+            sel.appendChild(opt)
+          })
+        }
+      } catch (e) { /* catalog is a convenience; ignore load errors */ }
+    }
+
+    // Fill the name/image fields of a section from the selected catalog entry
+    function reusePrize(section) {
+      const sel = document.getElementById(section === 'prize' ? 'prize-reuse' : 'winner-prize-reuse')
+      const p = prizeCatalog[sel.value]
+      if (!p) return
+      if (section === 'prize') {
+        document.getElementById('prize-name').value = p.prize_name
+        document.getElementById('prize-image').value = p.image_url || ''
+        previewImage()
+      } else {
+        document.getElementById('winner-prize-name').value = p.prize_name
+        document.getElementById('winner-prize-image').value = p.image_url || ''
+      }
+    }
 
     async function setPrize() {
       const body = {
@@ -224,6 +280,7 @@
         })
         const json = await r.json()
         showResult('prize-result', json.valid, json.valid ? '✅ Prize updated successfully!' : '❌ ' + json.error)
+        if (json.valid) loadPrizeCatalog()
       } catch (e) {
         showResult('prize-result', false, '❌ Network error: ' + e.message)
       }
@@ -252,6 +309,7 @@
         })
         const json = await r.json()
         showResult('winner-result', json.valid, json.valid ? '✅ Winner recorded!' : '❌ ' + json.error)
+        if (json.valid) loadPrizeCatalog()
       } catch (e) {
         showResult('winner-result', false, '❌ Network error: ' + e.message)
       }
