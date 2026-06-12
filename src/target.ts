@@ -38,26 +38,39 @@ Transform.create(arch, {
   scale: { x: 1, y: 1, z: 1 }
 })
 
+// Native TriggerAreas fire for EVERY avatar in the scene, including remote
+// players on a deployed realm. The library passes the entity that entered the
+// area to the callback, so each stage ignores anything but engine.PlayerEntity.
+let secondaryTrigger: Entity | null = null
+let targetTriggerActive = false
+
+function removeSecondaryTrigger() {
+    if (secondaryTrigger !== null) {
+        utils.triggers.removeTrigger(secondaryTrigger)
+        engine.removeEntity(secondaryTrigger)
+        secondaryTrigger = null
+    }
+}
+
 // Arch trigger - created at start
 utils.triggers.addTrigger(
     arch,
     1,
     1,
     [{ type: 'box', scale: {x:5,y:8,z:31}, position: Vector3.create(-17, 43.42, 15) }],
-    () => {
-        const localPos = Transform.get(engine.PlayerEntity).position
-        const dx = Math.abs(localPos.x - (-17))
-        const dy = Math.abs(localPos.y - 43.42)
-        const dz = Math.abs(localPos.z - 47)
-        if (dx < 2.5 && dy < 4 && dz < 15.5) {
-            localPlayerJumping = true
-            console.log('Local player entered jump zone - ready to record score')
-        } else {
-            console.log('Arch trigger fired by another player, not setting jump flag')
+    (enteredEntity) => {
+        if (enteredEntity !== engine.PlayerEntity) {
+            console.log('Arch trigger fired by another avatar - ignored')
+            return
         }
 
-        // Create secondary trigger when arch is triggered
-        const secondaryTrigger = engine.addEntity()
+        localPlayerJumping = true
+        passedSecondaryTrigger = false
+        console.log('Local player entered jump zone - ready to record score')
+
+        // Replace any leftover secondary trigger from a previous attempt
+        removeSecondaryTrigger()
+        secondaryTrigger = engine.addEntity()
         Transform.create(secondaryTrigger, {
             position: { x: 8, y: 3, z: 32 },
             scale: { x: 1, y: 1, z: 1 }
@@ -68,49 +81,58 @@ utils.triggers.addTrigger(
             1,
             1,
             [{ type: 'box', scale: {x:30,y:0.5,z:30} }],
-            () => {
-                const localPos = Transform.get(engine.PlayerEntity).position
-                const dx = Math.abs(localPos.x - 8)
-                const dz = Math.abs(localPos.z - 32)
-                if (dx < 15 && dz < 15 && localPlayerJumping) {
-                    passedSecondaryTrigger = true
-                    console.log('Local player passed secondary trigger - confirmed falling')
-
-                    // Remove secondary trigger since it's no longer needed
-                    engine.removeEntity(secondaryTrigger)
-
-                    // Create target trigger when secondary is triggered
-                    utils.triggers.oneTimeTrigger(
-                        targetEntity,
-                        utils.LAYER_2,
-                        utils.LAYER_1,
-                        [{ type: 'box' ,scale: {x:30,y:2,z:30}}],
-                        () => {
-                            if (!localPlayerJumping) {
-                                console.log('Score ignored - local player did not jump')
-                                return
-                            }
-                            if (!passedSecondaryTrigger) {
-                                console.log('Score ignored - local player did not pass through secondary trigger')
-                                return
-                            }
-
-                            localPlayerJumping = false
-                            passedSecondaryTrigger = false
-
-                            playerPos = Transform.get(engine.PlayerEntity).position
-                            const targetPos = Transform.get(targetEntity).position
-                            const distanceFromCenter = compareToCenter(playerPos, targetPos)
-                            publishScore(distanceFromCenter, leaderboard)
-                            fetchScores(leaderboard)
-                            sendGenericAction(ACTION_ID, [
-                              {id:"2838e6c9-f364-4ae2-bcff-d828eb92df76", value: distanceFromCenter},
-                            ])
-                            sendGenericAction("action_1755279382754_b5azxqqq2", [])
-                        },
-                        Color3.Yellow()
-                    )
+            (fallingEntity) => {
+                if (fallingEntity !== engine.PlayerEntity) {
+                    console.log('Secondary trigger fired by another avatar - ignored')
+                    return
                 }
+                if (!localPlayerJumping) return
+
+                passedSecondaryTrigger = true
+                console.log('Local player passed secondary trigger - confirmed falling')
+
+                // Remove secondary trigger since it's no longer needed
+                removeSecondaryTrigger()
+
+                // Create target trigger when secondary is triggered.
+                // Not oneTimeTrigger: that removes itself on the FIRST avatar
+                // to touch it, so a remote player landing first would consume
+                // it. Remove manually only after a valid local landing.
+                if (targetTriggerActive) return
+                targetTriggerActive = true
+                utils.triggers.addTrigger(
+                    targetEntity,
+                    utils.LAYER_2,
+                    utils.LAYER_1,
+                    [{ type: 'box' ,scale: {x:30,y:2,z:30}}],
+                    (landingEntity) => {
+                        if (landingEntity !== engine.PlayerEntity) {
+                            console.log('Target trigger fired by another avatar - ignored')
+                            return
+                        }
+                        if (!localPlayerJumping || !passedSecondaryTrigger) {
+                            console.log('Score ignored - jump sequence not completed')
+                            return
+                        }
+
+                        localPlayerJumping = false
+                        passedSecondaryTrigger = false
+                        targetTriggerActive = false
+                        utils.triggers.removeTrigger(targetEntity)
+
+                        playerPos = Transform.get(engine.PlayerEntity).position
+                        const targetPos = Transform.get(targetEntity).position
+                        const distanceFromCenter = compareToCenter(playerPos, targetPos)
+                        publishScore(distanceFromCenter, leaderboard)
+                        fetchScores(leaderboard)
+                        sendGenericAction(ACTION_ID, [
+                          {id:"2838e6c9-f364-4ae2-bcff-d828eb92df76", value: distanceFromCenter},
+                        ])
+                        sendGenericAction("action_1755279382754_b5azxqqq2", [])
+                    },
+                    () => {},
+                    Color3.Yellow()
+                )
             },
             () => {},
             Color3.Yellow()

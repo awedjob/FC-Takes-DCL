@@ -47,18 +47,15 @@ utils.triggers.addTrigger(
     1,
     1,
     [{ type: 'box', scale: {x:2,y:5,z:3}, position: Vector3.create(0, 0, 0) }],
-    () => {
-    const playerTransform = Transform.getOrNull(engine.PlayerEntity)
-    if (!playerTransform) return
-    const p = playerTransform.position
-    const dist = Math.sqrt((p.x - (-26)) ** 2 + (p.z - 48) ** 2)
-    if (dist < 4) {
-        movePlayerTo({
-            newRelativePosition: Vector3.create(-25, 50, 48),
-            cameraTarget: Vector3.create(-32, 55.0, 56.0),
-            avatarTarget: Vector3.create(-25.0, 50.0, 34),
-        })
-    }
+    (enteredEntity) => {
+    // Triggers fire for every avatar in the scene - only teleport when the
+    // LOCAL player is the one who entered
+    if (enteredEntity !== engine.PlayerEntity) return
+    movePlayerTo({
+        newRelativePosition: Vector3.create(-25, 50, 48),
+        cameraTarget: Vector3.create(-32, 55.0, 56.0),
+        avatarTarget: Vector3.create(-25.0, 50.0, 34),
+    })
 },
     () => {},
     Color3.Yellow()

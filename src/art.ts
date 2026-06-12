@@ -35,8 +35,8 @@ export function createArtTriggers() {
     })
 
     // MeshRenderer.setBox(artTrigger01)
-    utils.triggers.addTrigger(artTrigger01, utils.NO_LAYERS, utils.LAYER_1, [{ type: 'box', scale: { x: 2.75, y: 10, z: 1 } }], () => {
-
+    utils.triggers.addTrigger(artTrigger01, utils.NO_LAYERS, utils.LAYER_1, [{ type: 'box', scale: { x: 2.75, y: 10, z: 1 } }], (e) => {
+        if (e !== engine.PlayerEntity) return
         viewingArt = !viewingArt
     },)
     
@@ -47,8 +47,8 @@ export function createArtTriggers() {
     })
 
     // MeshRenderer.setBox(artTrigger02)
-    utils.triggers.addTrigger(artTrigger02, utils.NO_LAYERS, utils.LAYER_1, [{ type: 'box', scale: { x: 2.75, y: 10, z: 1 } }], () => {
-
+    utils.triggers.addTrigger(artTrigger02, utils.NO_LAYERS, utils.LAYER_1, [{ type: 'box', scale: { x: 2.75, y: 10, z: 1 } }], (e) => {
+        if (e !== engine.PlayerEntity) return
         viewingArt = !viewingArt
     },)
 
@@ -59,8 +59,8 @@ export function createArtTriggers() {
     })
 
     // MeshRenderer.setBox(artTrigger03)
-    utils.triggers.addTrigger(artTrigger03, utils.NO_LAYERS, utils.LAYER_1, [{ type: 'box', scale: { x: 2, y: 3, z: 7 } }], () => {
-
+    utils.triggers.addTrigger(artTrigger03, utils.NO_LAYERS, utils.LAYER_1, [{ type: 'box', scale: { x: 2, y: 3, z: 7 } }], (e) => {
+        if (e !== engine.PlayerEntity) return
         viewingArt = !viewingArt
     },)
 }
