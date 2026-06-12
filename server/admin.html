@@ -54,6 +54,17 @@
     }
     button:hover { background: #ffd740; }
     button:disabled { background: #555; color: #888; cursor: not-allowed; }
+    button.secondary {
+      margin-top: 8px;
+      width: auto;
+      background: transparent;
+      color: #f5c518;
+      border: 1px solid #f5c518;
+      padding: 6px 14px;
+      font-size: 0.8rem;
+      font-weight: normal;
+    }
+    button.secondary:hover { background: #2a2410; }
     .result {
       margin-top: 14px;
       padding: 10px 14px;
@@ -109,6 +120,7 @@
 
     <label for="winner-wallet">Wallet / User ID</label>
     <input type="text" id="winner-wallet" placeholder="0x... or DCL user ID">
+    <button class="secondary" onclick="lookupName()">Look up name from wallet</button>
 
     <label for="winner-name">Display Name</label>
     <input type="text" id="winner-name" placeholder="e.g. AwedJob">
@@ -242,6 +254,29 @@
         showResult('winner-result', json.valid, json.valid ? '✅ Winner recorded!' : '❌ ' + json.error)
       } catch (e) {
         showResult('winner-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    // Resolve a wallet's current Decentraland display name via the public
+    // catalyst profile API and auto-fill the Display Name field
+    async function lookupName() {
+      const wallet = document.getElementById('winner-wallet').value.trim()
+      if (!wallet) {
+        return showResult('winner-result', false, 'Enter a wallet address first.')
+      }
+      try {
+        const r = await fetch('https://peer.decentraland.org/lambdas/profiles/' + wallet)
+        if (!r.ok) throw new Error('No profile found for that wallet (HTTP ' + r.status + ')')
+        const json = await r.json()
+        const name = json && json.avatars && json.avatars[0] && json.avatars[0].name
+        if (name) {
+          document.getElementById('winner-name').value = name
+          showResult('winner-result', true, '✅ Found name: ' + name)
+        } else {
+          showResult('winner-result', false, 'Profile exists but has no display name.')
+        }
+      } catch (e) {
+        showResult('winner-result', false, '❌ Lookup failed: ' + e.message)
       }
     }
 

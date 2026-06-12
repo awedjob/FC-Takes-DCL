@@ -113,9 +113,10 @@ export function fetchWinners(winnersCircle: WinnersCircle) {
 
       winnersCircle.updateBoard(rows)
 
-      // Mark past winners as retired champions on the leaderboard
+      // Mark past winners as retired champions on the leaderboard (by wallet,
+      // so the marking survives display-name changes)
       setRetiredChampions(
-        (json.winners as any[]).map((w: any) => w.name).filter((n: any) => typeof n === 'string' && n !== '')
+        (json.winners as any[]).map((w: any) => w.wallet).filter((n: any) => typeof n === 'string' && n !== '')
       )
     } catch (e) {
       console.log('Error fetching winners: ' + e)

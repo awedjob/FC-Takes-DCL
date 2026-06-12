@@ -14,14 +14,15 @@ import { Color4,
 import { createLogo } from './logo'
 import { createTeleport } from './teleport'
 
-// Names of retired champions (past Winners Circle winners). Their leaderboard
+// Wallets of retired champions (past Winners Circle winners). Their leaderboard
 // rows render gold with a star so other players know those scores are not
-// competing for this week's prize.
+// competing for this week's prize. Matching by wallet rather than display name
+// so champions stay marked even if they rename their avatar.
 let retiredChampions = new Set<string>()
 let activeBoard: LeaderBoard | null = null
 
-export function setRetiredChampions(names: string[]) {
-  retiredChampions = new Set(names)
+export function setRetiredChampions(wallets: string[]) {
+  retiredChampions = new Set(wallets.map((w) => w.toLowerCase()))
   if (activeBoard) activeBoard.refresh()
 }
 
@@ -77,7 +78,7 @@ export class LeaderBoard {
     for (let i = 0; i < this.currentData.length; i++) {
       if (i < scoreData.length) {
         // update score data
-        const retired = retiredChampions.has(scoreData[i].name)
+        const retired = retiredChampions.has((scoreData[i].wallet || '').toLowerCase())
         this.currentData[i].updateValue(scoreData[i].name, scoreData[i].score.toString(), retired)
       } else {
         // create empty line

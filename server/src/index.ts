@@ -7,8 +7,11 @@ const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
 
-// Initialize SQLite database
-const db = new sqlite3.Database('./leaderboard.db');
+// Initialize SQLite database. On Railway, DB_PATH points at the persistent
+// volume mount (e.g. /data/leaderboard.db) — without it the file lives on the
+// container's ephemeral disk and every redeploy wipes all data.
+const DB_PATH = process.env.DB_PATH || './leaderboard.db';
+const db = new sqlite3.Database(DB_PATH);
 
 // Create scores table if it doesn't exist
 db.serialize(() => {
