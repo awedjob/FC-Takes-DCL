@@ -1,4 +1,4 @@
-import { LeaderBoard } from './leaderboard'
+import { LeaderBoard, setRetiredChampions } from './leaderboard'
 import { WinnersCircle } from './winnersCircle'
 import { executeTask } from '@dcl/sdk/ecs'
 import { getPlayer } from '@dcl/sdk/src/players'
@@ -112,6 +112,11 @@ export function fetchWinners(winnersCircle: WinnersCircle) {
       }))
 
       winnersCircle.updateBoard(rows)
+
+      // Mark past winners as retired champions on the leaderboard
+      setRetiredChampions(
+        (json.winners as any[]).map((w: any) => w.name).filter((n: any) => typeof n === 'string' && n !== '')
+      )
     } catch (e) {
       console.log('Error fetching winners: ' + e)
     }

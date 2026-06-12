@@ -39,44 +39,44 @@ Material.setPbrMaterial(myEntity, {
     transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
 })
 
-const forgeLogo = engine.addEntity()
-MeshRenderer.setPlane(forgeLogo)
-MeshCollider.setPlane(forgeLogo)
+// const forgeLogo = engine.addEntity()
+// MeshRenderer.setPlane(forgeLogo)
+// MeshCollider.setPlane(forgeLogo)
 
-Transform.create(forgeLogo, {
-    parent: parentEntity,
-    rotation: Quaternion.fromEulerDegrees(0, 0, 0),
-    position: { x: -4.5, y: -5.25, z: -0.1 },
-    scale: { x: 0.75, y: 0.75, z: 1 },
-})
+// Transform.create(forgeLogo, {
+//     parent: parentEntity,
+//     rotation: Quaternion.fromEulerDegrees(0, 0, 0),
+//     position: { x: -4.5, y: -5.25, z: -0.1 },
+//     scale: { x: 0.75, y: 0.75, z: 1 },
+// })
 
-pointerEventsSystem.onPointerDown({
-    entity: forgeLogo,
-    opts: {
-        button: InputAction.IA_PRIMARY,
-        hoverText: 'Open Forge',
-        maxDistance: 10
-    },
-}   
-,
- () => {
-        console.log('Forge logo clicked')
-        ForgeConnect()
-    }
-)
+// pointerEventsSystem.onPointerDown({
+//     entity: forgeLogo,
+//     opts: {
+//         button: InputAction.IA_PRIMARY,
+//         hoverText: 'Open Forge',
+//         maxDistance: 10
+//     },
+// }
+// ,
+//  () => {
+//         console.log('Forge logo clicked')
+//         ForgeConnect()
+//     }
+// )
 
 
-Material.setPbrMaterial(forgeLogo, {
-    texture: Material.Texture.Common({
-        src: 'assets/scene/forge_icon.jpg',
-    }),
-        emissiveTexture: Material.Texture.Common({
-        src: 'assets/scene/forge_icon.jpg',
-    }),
-        emissiveColor: Color4.White(),
-        emissiveIntensity: 1.0,
-        metallic: 0.0,
-        roughness: 1.0,
-    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
-})
+// Material.setPbrMaterial(forgeLogo, {
+//     texture: Material.Texture.Common({
+//         src: 'assets/scene/forge_icon.jpg',
+//     }),
+//         emissiveTexture: Material.Texture.Common({
+//         src: 'assets/scene/forge_icon.jpg',
+//     }),
+//         emissiveColor: Color4.White(),
+//         emissiveIntensity: 1.0,
+//         metallic: 0.0,
+//         roughness: 1.0,
+//     transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
+// })
 }

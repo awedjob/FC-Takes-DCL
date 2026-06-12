@@ -26,7 +26,7 @@ export class WinnersCircle {
       parent: parent,
     })
     TextShape.create(titleText, {
-      text: 'Winners Circle',
+      text: 'Retired Champions',
       fontSize: 8,
       textColor: Color4.Yellow(),
       width: 16,
@@ -88,7 +88,7 @@ class WinnersCircleRow {
     TextShape.create(this.nameText, {
       text: '----',
       fontSize: 4.5,
-      textColor: Color4.White(),
+      textColor: Color4.Yellow(),
       width: 12,
       height: 1.5,
       textAlign: TextAlignMode.TAM_MIDDLE_LEFT,
