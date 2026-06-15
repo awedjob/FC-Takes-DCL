@@ -112,7 +112,7 @@ function createSkyLogo() {
   const entity = engine.addEntity()
   MeshRenderer.setPlane(entity)
   Transform.create(entity, {
-    position: { x: 0, y: 50, z: 32 },
+    position: { x: 0, y: 76.1, z: 32 },
     scale: { x: 32, y: 32, z: 1 },
     rotation: Quaternion.fromEulerDegrees(90, 0, 0)
   })
