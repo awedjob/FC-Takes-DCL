@@ -121,7 +121,19 @@ function createSkyLogo() {
     texture: Material.Texture.Common({
       src: 'assets/scene/JumpZone.png'
     }),
-    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
-    doubleSided: false
+    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND
+  })
+
+  // Create a back-blocking plane (transparent, faces opposite direction)
+  const backEntity = engine.addEntity()
+  MeshRenderer.setPlane(backEntity)
+  Transform.create(backEntity, {
+    position: { x: 0, y: 76.1, z: 32 },
+    scale: { x: 32, y: 32, z: 1 },
+    rotation: Quaternion.fromEulerDegrees(-90, 0, 0)
+  })
+  Material.setPbrMaterial(backEntity, {
+    albedoColor: Color4.create(0, 0, 0, 0),
+    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND
   })
 }
