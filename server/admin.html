@@ -184,6 +184,18 @@
     <div id="current-prize-display" style="margin-top:14px; font-size:0.9rem; color:#aaa;">Click Refresh to load.</div>
   </section>
 
+  <!-- CLEAR LEADERBOARD -->
+  <section>
+    <h3>🗑️ Clear Leaderboard</h3>
+    <p style="font-size:0.9rem; color:#888; margin-bottom:16px;">Erase all scores and reset the leaderboard to blank. This requires your admin key to confirm.</p>
+
+    <label for="clear-admin-key">Admin Key (required confirmation)</label>
+    <input type="password" id="clear-admin-key" placeholder="Your ADMIN_KEY">
+
+    <button onclick="clearScores()">Clear All Scores</button>
+    <div class="result" id="clear-result"></div>
+  </section>
+
   <script>
     const BASE = 'https://fartarget-production.up.railway.app'
 
@@ -380,6 +392,31 @@
         }
       } catch (e) {
         el.textContent = 'Error: ' + e.message
+      }
+    }
+
+    async function clearScores() {
+      const adminKey = document.getElementById('clear-admin-key').value.trim()
+      if (!adminKey) {
+        return showResult('clear-result', false, '❌ Admin key is required to clear the leaderboard.')
+      }
+      if (!confirm('⚠️  This will PERMANENTLY erase all leaderboard scores. Are you sure?')) {
+        return
+      }
+      if (!confirm('⚠️  Final confirmation: This action cannot be undone. Delete all scores?')) {
+        return
+      }
+      try {
+        const r = await fetch(BASE + '/clear-scores', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ admin_key: adminKey })
+        })
+        const json = await r.json()
+        showResult('clear-result', json.valid, json.valid ? '✅ ' + json.message : '❌ ' + json.error)
+        if (json.valid) document.getElementById('clear-admin-key').value = ''
+      } catch (e) {
+        showResult('clear-result', false, '❌ Network error: ' + e.message)
       }
     }
   </script>

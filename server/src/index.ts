@@ -536,6 +536,28 @@ app.post('/finalize-week', (req: any, res: any) => {
 
 // ── End Weekly Winner Automation ──────────────────────────────────────────────
 
+// POST /clear-scores — admin tool to clear all scores from the leaderboard
+// Requires admin_key in body for safety (prevents accidental clears)
+app.post('/clear-scores', (req: any, res: any) => {
+  const { admin_key } = req.body || {};
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+  if (admin_key !== ADMIN_KEY) {
+    return res.status(403).json({ valid: false, error: 'Unauthorized' });
+  }
+  db.run(
+    `DELETE FROM scores`,
+    [],
+    function(this: any, err: any) {
+      if (err) {
+        console.error('Error clearing all scores:', err);
+        return res.status(500).json({ valid: false, error: 'Failed to clear scores' });
+      }
+      console.log(`🗑️  Cleared ${this.changes} total score(s) — leaderboard reset`);
+      return res.status(200).json({ valid: true, message: `Cleared ${this.changes} score(s). Leaderboard is now blank.` });
+    }
+  );
+});
+
 // Debug endpoint: list all scores with their calculated week
 app.get('/debug/scores', (req: any, res: any) => {
   const key = req.query.key;
