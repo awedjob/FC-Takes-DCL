@@ -121,6 +121,7 @@ function createSkyLogo() {
     texture: Material.Texture.Common({
       src: 'assets/scene/JumpZone.png'
     }),
-    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND
+    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND,
+    doubleSided: false
   })
 }
