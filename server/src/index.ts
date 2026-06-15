@@ -432,87 +432,126 @@ function getISOWeek(date: Date): string {
   return `${year}-W${String(week).padStart(2, '0')}`;
 }
 
-// POST /finalize-week — automatically calculate and record the weekly winner
-// Called by cron job every Sunday at 13:59 UTC
-app.post('/finalize-week', (req: any, res: any) => {
-  const { admin_key } = req.body || {};
-  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
-  if (admin_key !== ADMIN_KEY) {
-    return res.status(403).json({ valid: false, error: 'Unauthorized' });
-  }
-
-  const currentWeek = getISOWeek(new Date());
-  console.log(`⏰ Finalizing week: ${currentWeek}`);
+// The actual finalization logic — separate from HTTP so cron can call it directly
+// week can be null (use current week) or an ISO week string like "2026-W24"
+function finalizeWeeklyWinner(callback: (err: string | null, result?: any) => void, weekOverride?: string) {
+  const targetWeek = weekOverride || getISOWeek(new Date());
+  console.log(`⏰ Finalizing week: ${targetWeek}`);
 
   // Get all past winners to exclude them
   db.all(`SELECT wallet FROM winners`, [], (err: any, pastWinners: any) => {
     if (err) {
       console.error('Error fetching past winners:', err);
-      return res.status(500).json({ valid: false, error: 'Failed to fetch past winners' });
+      return callback('Failed to fetch past winners');
     }
 
     const excludedWallets = pastWinners.map((w: any) => w.wallet);
 
-    // Get all scores from this week, ordered by score (lowest = best), excluding past winners
+    // Get all scores from the target week, ordered by score (lowest = best), excluding past winners
     const placeholders = excludedWallets.length > 0 ? excludedWallets.map(() => '?').join(',') : "'nonexistent'";
     const query = `
       SELECT wallet, name, score, timestamp
       FROM scores
-      WHERE datetime(timestamp) >= datetime('now', 'start of week', '-6 days', 'utc')
-        AND datetime(timestamp) < datetime('now', 'start of week', '+1 days', 'utc')
+      WHERE strftime('%G-W%V', timestamp) = ?
         AND wallet NOT IN (${placeholders})
       ORDER BY score ASC
       LIMIT 1
     `;
 
-    db.get(query, excludedWallets, (err: any, topScore: any) => {
+    db.get(query, [targetWeek, ...excludedWallets], (err: any, topScore: any) => {
       if (err) {
         console.error('Error fetching top scorer:', err);
-        return res.status(500).json({ valid: false, error: 'Failed to fetch scores' });
+        return callback('Failed to fetch scores');
       }
 
       if (!topScore) {
-        console.log(`❌ No eligible winner found for week ${currentWeek}`);
-        return res.status(200).json({ valid: true, message: 'No eligible winner this week' });
+        console.log(`❌ No eligible winner found for week ${targetWeek}`);
+        return callback(null, { message: `No eligible winner for week ${targetWeek}` });
       }
 
       // Get current prize
       db.get(`SELECT prize_name, image_url FROM current_prize WHERE id = 1`, [], (err: any, prize: any) => {
         if (err) {
           console.error('Error fetching current prize:', err);
-          return res.status(500).json({ valid: false, error: 'Failed to fetch prize' });
+          return callback('Failed to fetch prize');
         }
 
         // Record the winner
         db.run(
           `INSERT INTO winners (wallet, name, score, week, prize_name, prize_image_url)
            VALUES (?, ?, ?, ?, ?, ?)`,
-          [topScore.wallet, topScore.name, topScore.score, currentWeek, prize?.prize_name || '', prize?.image_url || ''],
+          [topScore.wallet, topScore.name, topScore.score, targetWeek, prize?.prize_name || '', prize?.image_url || ''],
           (err: any) => {
             if (err) {
               console.error('Error recording winner:', err);
-              return res.status(500).json({ valid: false, error: 'Failed to record winner' });
+              return callback('Failed to record winner');
             }
 
-            console.log(`🏆 Winner recorded: ${topScore.name} (${topScore.score}m) for week ${currentWeek}`);
-            return res.status(200).json({
-              valid: true,
-              message: 'Weekly winner finalized',
-              winner: {
-                name: topScore.name,
-                score: topScore.score,
-                week: currentWeek,
-                prize: prize?.prize_name || '(no prize set)'
+            console.log(`🏆 Winner recorded: ${topScore.name} (${topScore.score}m) for week ${targetWeek}`);
+
+            // Clear all scores from the target week (fresh leaderboard for next week)
+            db.run(
+              `DELETE FROM scores WHERE strftime('%G-W%V', timestamp) = ?`,
+              [targetWeek],
+              function(this: any, err: any) {
+                if (err) {
+                  console.error('Error clearing scores:', err);
+                  return callback('Failed to clear scores');
+                }
+                console.log(`🗑️  Cleared ${this.changes} score(s) from week ${targetWeek} — leaderboard reset`);
+                return callback(null, {
+                  winner: {
+                    name: topScore.name,
+                    score: topScore.score,
+                    week: targetWeek,
+                    prize: prize?.prize_name || '(no prize set)'
+                  }
+                });
               }
-            });
+            );
           }
         );
       });
     });
   });
+}
+
+// POST /finalize-week — admin endpoint to manually trigger weekly finalization
+// Optional body: { admin_key, week: "2026-W24" } — if week is omitted, uses current week
+app.post('/finalize-week', (req: any, res: any) => {
+  const { admin_key, week } = req.body || {};
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+  if (admin_key !== ADMIN_KEY) {
+    return res.status(403).json({ valid: false, error: 'Unauthorized' });
+  }
+
+  finalizeWeeklyWinner((err: string | null, result?: any) => {
+    if (err) {
+      return res.status(500).json({ valid: false, error: err });
+    }
+    return res.status(200).json({ valid: true, ...result });
+  }, week);
 });
 
 // ── End Weekly Winner Automation ──────────────────────────────────────────────
+
+// Debug endpoint: list all scores with their calculated week
+app.get('/debug/scores', (req: any, res: any) => {
+  const key = req.query.key;
+  if (key !== process.env.ADMIN_KEY) {
+    return res.status(403).json({ error: 'Unauthorized' });
+  }
+  db.all(
+    `SELECT wallet, name, score, timestamp, strftime('%G-W%V', timestamp) as week FROM scores ORDER BY timestamp DESC`,
+    [],
+    (err: any, rows: any) => {
+      if (err) {
+        return res.status(500).json({ error: err.message });
+      }
+      res.status(200).json({ scores: rows });
+    }
+  );
+});
 
 app.get('/health', (req: any, res: any) => {
   res.status(200).json({ status: 'OK', message: 'Leaderboard server is running' });
@@ -530,50 +569,18 @@ app.listen(PORT, HOST, () => {
 
 // Schedule weekly winner finalization
 // Runs every Sunday at 23:59 UTC
-const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
 cron.schedule('59 23 * * 0', () => {
   console.log(`\n📋 [CRON] Finalizing weekly winner...`);
 
-  // Call the finalize-week endpoint with internal admin key
-  const http = require('http');
-  const data = JSON.stringify({ admin_key: ADMIN_KEY });
-
-  const options = {
-    hostname: 'localhost',
-    port: PORT,
-    path: '/finalize-week',
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Content-Length': data.length,
-    },
-  };
-
-  const req = http.request(options, (res: any) => {
-    let body = '';
-    res.on('data', (chunk: any) => body += chunk);
-    res.on('end', () => {
-      try {
-        const json = JSON.parse(body);
-        if (json.valid && json.winner) {
-          console.log(`✅ [CRON] ${json.winner.name} won week ${json.winner.week}!`);
-        } else if (json.valid) {
-          console.log(`⚠️  [CRON] ${json.message}`);
-        } else {
-          console.error(`❌ [CRON] Error: ${json.error}`);
-        }
-      } catch (e) {
-        console.error(`❌ [CRON] Failed to parse response: ${e}`);
-      }
-    });
+  finalizeWeeklyWinner((err: string | null, result?: any) => {
+    if (err) {
+      console.error(`❌ [CRON] Error: ${err}`);
+    } else if (result?.winner) {
+      console.log(`✅ [CRON] ${result.winner.name} won week ${result.winner.week}!`);
+    } else {
+      console.log(`⚠️  [CRON] ${result?.message || 'Finalization complete'}`);
+    }
   });
-
-  req.on('error', (error: any) => {
-    console.error(`❌ [CRON] Error calling /finalize-week: ${error.message}`);
-  });
-
-  req.write(data);
-  req.end();
 }, { timezone: 'UTC' });
 
 process.on('SIGINT', () => {
