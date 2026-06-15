@@ -1,5 +1,5 @@
 import { Color4, Vector3 } from '@dcl/sdk/math'
-import { ColliderLayer, engine, GltfContainer, InputModifier, Material, MeshRenderer, Transform, VideoPlayer } from '@dcl/sdk/ecs'
+import { Billboard, ColliderLayer, engine, GltfContainer, InputModifier, Material, MaterialTransparencyMode, MeshRenderer, Transform, VideoPlayer } from '@dcl/sdk/ecs'
 import { target } from './target'
 import { createTeleport } from './teleport'
 import { createLogo } from './logo'
@@ -61,6 +61,9 @@ export function main() {
 
   // Sight-blocking particle geyser over the target
   createParticleStream()
+
+  // Sky logo: 32m x 32m quad visible only from above 76.15m
+  createSkyLogo()
 }
 
 function createBuilding() {
@@ -100,4 +103,28 @@ Material.setPbrMaterial(entity, {
   emissiveColor: Color4.White()
 })
 
+}
+
+function createSkyLogo() {
+  // 32m x 32m Jump Zone logo quad at 76.15m height, centered above parcels
+  // -131,90 -132,90 -131,91 -132,91 (the center 2x2 parcel block)
+  const entity = engine.addEntity()
+  MeshRenderer.setPlane(entity)
+  Billboard.create(entity)
+  Transform.create(entity, {
+    position: { x: 0, y: 76.15, z: 32 },
+    scale: { x: 32, y: 32, z: 1 }
+  })
+
+  Material.setPbrMaterial(entity, {
+    texture: Material.Texture.Common({
+      src: 'https://pink-ill-snipe-snipe-862.mypinata.cloud/ipfs/bafybeibndzjlvbp2o6lcq7i7jdypqa52ms5qos437olggmhx2t4wcp3bqm'
+    }),
+    emissiveTexture: Material.Texture.Common({
+      src: 'https://pink-ill-snipe-snipe-862.mypinata.cloud/ipfs/bafybeibndzjlvbp2o6lcq7i7jdypqa52ms5qos437olggmhx2t4wcp3bqm'
+    }),
+    emissiveIntensity: 1.2,
+    emissiveColor: Color4.White(),
+    transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND
+  })
 }
