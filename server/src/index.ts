@@ -6,6 +6,7 @@ const cron = require('node-cron');
 const app = express();
 app.use(cors({ origin: true }));
 app.use(express.json());
+app.use(express.static(__dirname + '/../'));
 
 // Initialize SQLite database. On Railway, DB_PATH points at the persistent
 // volume mount (e.g. /data/leaderboard.db) — without it the file lives on the
