@@ -1,5 +1,5 @@
 import { Color4, Vector3 } from '@dcl/sdk/math'
-import { Billboard, ColliderLayer, engine, GltfContainer, InputModifier, Material, MaterialTransparencyMode, MeshRenderer, Transform, VideoPlayer } from '@dcl/sdk/ecs'
+import { ColliderLayer, engine, GltfContainer, InputModifier, Material, MaterialTransparencyMode, MeshRenderer, Transform, VideoPlayer } from '@dcl/sdk/ecs'
 import { target } from './target'
 import { createTeleport } from './teleport'
 import { createLogo } from './logo'
@@ -106,14 +106,14 @@ Material.setPbrMaterial(entity, {
 }
 
 function createSkyLogo() {
-  // 32m x 32m Jump Zone logo quad at 76.15m height, centered above parcels
+  // 32m x 32m flat horizontal quad at 76.15m height, centered above parcels
   // -131,90 -132,90 -131,91 -132,91 (the center 2x2 parcel block)
+  // Lies flat in the X-Z plane, facing up (positive Y), visible from any distance above
   const entity = engine.addEntity()
   MeshRenderer.setPlane(entity)
-  Billboard.create(entity)
   Transform.create(entity, {
     position: { x: 0, y: 76.15, z: 32 },
-    scale: { x: 32, y: 32, z: 1 }
+    scale: { x: 32, y: 1, z: 32 }
   })
 
   Material.setPbrMaterial(entity, {
