@@ -1,4 +1,4 @@
-import { Color4, Vector3 } from '@dcl/sdk/math'
+import { Color4, Quaternion, Vector3 } from '@dcl/sdk/math'
 import { ColliderLayer, engine, GltfContainer, InputModifier, Material, MaterialTransparencyMode, MeshRenderer, Transform, VideoPlayer } from '@dcl/sdk/ecs'
 import { target } from './target'
 import { createTeleport } from './teleport'
@@ -112,19 +112,15 @@ function createSkyLogo() {
   const entity = engine.addEntity()
   MeshRenderer.setPlane(entity)
   Transform.create(entity, {
-    position: { x: 0, y: 76.15, z: 32 },
-    scale: { x: 32, y: 1, z: 32 }
+    position: { x: 0, y: 50, z: 32 },
+    scale: { x: 32, y: 32, z: 1 },
+    rotation: Quaternion.fromEulerDegrees(90, 0, 0)
   })
 
   Material.setPbrMaterial(entity, {
     texture: Material.Texture.Common({
-      src: 'https://pink-ill-snipe-snipe-862.mypinata.cloud/ipfs/bafybeibndzjlvbp2o6lcq7i7jdypqa52ms5qos437olggmhx2t4wcp3bqm'
+      src: 'assets/scene/JumpZone.png'
     }),
-    emissiveTexture: Material.Texture.Common({
-      src: 'https://pink-ill-snipe-snipe-862.mypinata.cloud/ipfs/bafybeibndzjlvbp2o6lcq7i7jdypqa52ms5qos437olggmhx2t4wcp3bqm'
-    }),
-    emissiveIntensity: 1.2,
-    emissiveColor: Color4.White(),
     transparencyMode: MaterialTransparencyMode.MTM_ALPHA_BLEND
   })
 }
