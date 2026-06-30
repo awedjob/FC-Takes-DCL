@@ -51,6 +51,9 @@
 - Catch-up **defers** any missed week that has no prize on record (logs it) rather than guessing — so a recovered week is never crowned with the wrong prize. Set the prize via `/set-weekly-prize`, then it finalizes on the next boot or via `/finalize-week`.
 - One-time migration seeds `weekly_prizes` from the live `current_prize` (captures W25 = Warplet Skin).
 
+#### Update existing winners' prize images
+- Added `POST /update-winner-prize` + an "Update Winner Prize" admin-panel section. Winners Circle thumbnails render `winners.prize_image_url`, frozen when each champion was recorded — `/set-prize` and `/set-weekly-prize` do **not** change them, so there was previously no way to re-point a recorded champion's thumbnail (e.g. after moving an image to a new host). The tool targets either one row by `week` or, in bulk, every row with a given `match_prize_name` (e.g. re-point all "Warplet Skin" champions at once); `new_prize_name`/`new_image_url` are individually optional (omitted = unchanged).
+
 ### Scene (src/teleport.ts)
 - Updated trigger entity world position from `x: 22.7, z: 2.9` to `x: 22.31, z: 3.81` to match actual portal location after estate expansion
 - Changed trigger layers from `1, 1` to `4, 4` to avoid conflicts with other triggers

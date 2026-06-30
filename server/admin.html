@@ -212,6 +212,49 @@
     <div class="result" id="delete-result"></div>
   </section>
 
+  <!-- UPDATE WINNER PRIZE -->
+  <section>
+    <h3>Update Winner Prize (Winners Circle)</h3>
+    <p style="font-size:0.85rem; color:#888; margin-bottom:16px;">
+      Change the prize name/image on <strong>already-recorded champions</strong>. The Winners Circle
+      thumbnails come from the winner rows, frozen when each was recorded — setting "This Week's Prize"
+      or "Weekly Prize History" does <strong>not</strong> change them. Target one week, or bulk-update
+      every champion that has a given prize (e.g. re-point all "Warplet Skin" winners to a new image).
+    </p>
+
+    <label for="uwp-admin-key">Admin Key</label>
+    <input type="password" id="uwp-admin-key" placeholder="Your ADMIN_KEY">
+
+    <p style="font-size:0.8rem; color:#f5c518; margin:18px 0 2px; text-transform:uppercase; letter-spacing:0.04em;">Step 1 — Which champions to update (pick ONE)</p>
+
+    <label for="uwp-week">By Week — updates the one champion from that week</label>
+    <input type="text" id="uwp-week" placeholder="e.g. 2026-W25">
+
+    <label for="uwp-match-prize">By Prize Name — updates EVERY champion that currently has this prize</label>
+    <input type="text" id="uwp-match-prize" placeholder="e.g. Warplet Skin">
+
+    <hr style="border-color:#2a2a2a; margin:18px 0 4px;">
+
+    <p style="font-size:0.8rem; color:#f5c518; margin:14px 0 2px; text-transform:uppercase; letter-spacing:0.04em;">Step 2 — What to change (fill at least one; blanks stay as-is)</p>
+
+    <label for="uwp-reuse">Reuse a Previous Prize (optional)</label>
+    <select id="uwp-reuse" onchange="reusePrize('uwp')"><option value="">— pick a past prize —</option></select>
+
+    <label for="uwp-name">Change Prize Name to (optional)</label>
+    <input type="text" id="uwp-name" placeholder="leave blank to keep current name">
+
+    <label for="uwp-image">Change Prize Image URL to (optional)</label>
+    <input type="text" id="uwp-image" placeholder="leave blank to keep current image" oninput="previewUwpImage()">
+
+    <div class="preview-wrap" id="uwp-preview-wrap">
+      <img id="uwp-preview-img" src="" alt="Prize preview">
+      <p>Image preview</p>
+    </div>
+
+    <button onclick="updateWinnerPrize()">Update Winner Prize</button>
+    <div class="result" id="uwp-result"></div>
+  </section>
+
   <!-- VIEW CURRENT PRIZE -->
   <section>
     <h3>Current Prize (live)</h3>
@@ -280,7 +323,7 @@
         const json = await r.json()
         if (!json.valid || !json.prizes) return
         prizeCatalog = json.prizes
-        for (const prefix of ['prize', 'winner-prize', 'weekly-prize']) {
+        for (const prefix of ['prize', 'winner-prize', 'weekly-prize', 'uwp']) {
           const sel = document.getElementById(prefix + '-reuse')
           if (!sel) continue
           sel.innerHTML = '<option value="">— pick a past prize —</option>'
@@ -300,6 +343,7 @@
         prize:  { reuse: 'prize-reuse',        name: 'prize-name',        image: 'prize-image' },
         winner: { reuse: 'winner-prize-reuse', name: 'winner-prize-name', image: 'winner-prize-image' },
         weekly: { reuse: 'weekly-prize-reuse', name: 'weekly-prize-name', image: 'weekly-prize-image' },
+        uwp:    { reuse: 'uwp-reuse',          name: 'uwp-name',          image: 'uwp-image' },
       }[section]
       if (!ids) return
       const sel = document.getElementById(ids.reuse)
@@ -309,6 +353,7 @@
       document.getElementById(ids.image).value = p.image_url || ''
       if (section === 'prize') previewImage()
       if (section === 'weekly') previewWeeklyImage()
+      if (section === 'uwp') previewUwpImage()
     }
 
     async function setPrize() {
@@ -463,6 +508,58 @@
         showResult('delete-result', json.valid, json.valid ? '✅ ' + json.message : '❌ ' + json.error)
       } catch (e) {
         showResult('delete-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    function previewUwpImage() {
+      const url = document.getElementById('uwp-image').value.trim()
+      const wrap = document.getElementById('uwp-preview-wrap')
+      const img  = document.getElementById('uwp-preview-img')
+      if (url) {
+        img.src = url
+        wrap.style.display = 'block'
+      } else {
+        wrap.style.display = 'none'
+      }
+    }
+
+    async function updateWinnerPrize() {
+      const week  = document.getElementById('uwp-week').value.trim()
+      const match = document.getElementById('uwp-match-prize').value.trim()
+      const name  = document.getElementById('uwp-name').value.trim()
+      const image = document.getElementById('uwp-image').value.trim()
+      const adminKey = document.getElementById('uwp-admin-key').value.trim()
+
+      if (!adminKey) {
+        return showResult('uwp-result', false, 'Admin key is required.')
+      }
+      if (!week && !match) {
+        return showResult('uwp-result', false, 'Enter a Week or a Prize Name to match.')
+      }
+      if (week && match) {
+        return showResult('uwp-result', false, 'Use only one target: Week OR Prize Name match, not both.')
+      }
+      if (!name && !image) {
+        return showResult('uwp-result', false, 'Enter a new Prize Name and/or new Image URL.')
+      }
+
+      const body = { admin_key: adminKey }
+      if (week) body.week = week
+      if (match) body.match_prize_name = match
+      if (name) body.new_prize_name = name
+      if (image) body.new_image_url = image
+
+      try {
+        const r = await fetch(BASE + '/update-winner-prize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const json = await r.json()
+        showResult('uwp-result', json.valid, json.valid ? '✅ ' + json.message : '❌ ' + json.error)
+        if (json.valid) loadPrizeCatalog()
+      } catch (e) {
+        showResult('uwp-result', false, '❌ Network error: ' + e.message)
       }
     }
 

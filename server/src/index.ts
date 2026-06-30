@@ -500,6 +500,48 @@ app.post('/delete-winner', (req: any, res: any) => {
   );
 });
 
+// POST /update-winner-prize — admin tool to change the prize name/image on
+// already-recorded winners. The Winners Circle renders winners.prize_image_url
+// frozen at record time, and /set-prize / /set-weekly-prize do NOT touch it, so
+// this is the only way to re-point a champion's thumbnail (e.g. after moving an
+// image to a new host). Target either one row by `week`, or every row with a
+// given prize via `match_prize_name` (bulk — e.g. fix all "Warplet Skin"
+// champions at once). At least one of new_prize_name / new_image_url required.
+app.post('/update-winner-prize', (req: any, res: any) => {
+  const { week, match_prize_name, new_prize_name, new_image_url, admin_key } = req.body || {};
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+  if (admin_key !== ADMIN_KEY) {
+    return res.status(403).json({ valid: false, error: 'Unauthorized' });
+  }
+  if (!week && !match_prize_name) {
+    return res.status(400).json({ valid: false, error: 'Provide either week or match_prize_name to target rows' });
+  }
+  if (week && match_prize_name) {
+    return res.status(400).json({ valid: false, error: 'Provide only one of week or match_prize_name, not both' });
+  }
+  if (new_prize_name === undefined && new_image_url === undefined) {
+    return res.status(400).json({ valid: false, error: 'Provide at least one of new_prize_name or new_image_url' });
+  }
+  // COALESCE leaves a column unchanged when its new value is omitted (null).
+  const where = week ? 'week = ?' : 'prize_name = ?';
+  const whereVal = week || match_prize_name;
+  db.run(
+    `UPDATE winners
+        SET prize_name = COALESCE(?, prize_name),
+            prize_image_url = COALESCE(?, prize_image_url)
+      WHERE ${where}`,
+    [new_prize_name ?? null, new_image_url ?? null, whereVal],
+    function (this: any, err: any) {
+      if (err) {
+        console.error('Error updating winner prize:', err);
+        return res.status(500).json({ valid: false, error: 'Failed to update winner prize' });
+      }
+      if (new_prize_name) rememberPrize(new_prize_name, new_image_url || '');
+      return res.status(200).json({ valid: true, message: `Updated ${this.changes} winner row(s)` });
+    }
+  );
+});
+
 // ── End Winners Circle endpoints ──────────────────────────────────────────────
 
 // ── Weekly Winner Automation ──────────────────────────────────────────────────
