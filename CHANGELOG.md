@@ -33,3 +33,27 @@
 ## Leaderboard
 
 **Name and score spacing (leaderboard.ts)** — Increased the horizontal distance between player names and scores from ±2.5 to ±3 units to prevent longer names from overlapping with score values.
+
+## [Unreleased] - 2026-06-30
+
+### Server (server/src/index.ts)
+- Added `/reset-scores` DELETE endpoint to clear all scores from the SQLite database
+- Deployed to Railway (fartarget-production.up.railway.app)
+- Reset procedure: `railway up` from `server/` directory, then `curl -X DELETE https://fartarget-production.up.railway.app/reset-scores`
+
+### Scene (src/teleport.ts)
+- Updated trigger entity world position from `x: 22.7, z: 2.9` to `x: 22.31, z: 3.81` to match actual portal location after estate expansion
+- Changed trigger layers from `1, 1` to `4, 4` to avoid conflicts with other triggers
+- **NOTE: Leaderboard portal trigger still not firing as of end of session — further debugging needed**
+
+### Scene (src/index.ts)
+- Added temporary position logger system for debugging (should be removed before deployment)
+
+### Infrastructure
+- Estate expanded from 8 to 13 parcels
+- Base parcel confirmed as `-131,89`
+- Scoreboard was reset for new competition period
+
+### Known Issues
+- Leaderboard portal teleport trigger not firing in preview — trigger box is in correct position but `"Leaderboard portal trigger fired!"` never appears in logs
+- Grass from adjacent parcels bleeding through the bullseye target area
