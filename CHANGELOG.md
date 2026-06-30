@@ -41,10 +41,20 @@
 - Deployed to Railway (fartarget-production.up.railway.app)
 - Reset procedure: `railway up` from `server/` directory, then `curl -X DELETE https://fartarget-production.up.railway.app/reset-scores`
 
+#### Weekly rotation reliability (root-cause fix for skipped weeks)
+- **PRIMARY root cause — SQLite ISO-week incompatibility:** every week query used `strftime('%G-W%V', timestamp)`, but the bundled SQLite is **3.44.2** and the `%G`/`%V` codes were only added in **3.46.0**. They returned `NULL`, so `WHERE strftime('%G-W%V', timestamp) = '2026-Wxx'` matched **zero rows** — finalization always reported "no eligible winner", never recorded a champion, never reset. Weekly automation had in fact *never* worked; all prior champions (W20–W24) were entered manually via `/add-winner` (note the June 12/15 backfilled `won_at` values). Fixed by computing ISO weeks in **JS** and matching scores by **UTC datetime range** (`timestamp >= start AND timestamp < end`) in `finalizeWeeklyWinner()`, `catchUpMissedWeeks()`, and `/debug/scores` — no more `strftime` week codes. Added helpers `isoWeekToRange()`, `toSqlUTC()`, `parseSqlUTC()`; made `getISOWeek()` UTC-correct.
+- **Secondary cause — no missed-run recovery:** finalization (champion + leaderboard reset) is a single atomic op inside `finalizeWeeklyWinner()`, run only by an in-process `node-cron` Sunday-23:59-UTC tick. Even once week-matching works, a redeploy/restart/sleep across that tick would skip a week with no retry.
+- Added `catchUpMissedWeeks()` — runs on every startup, finalizing any *past* week that has scores but no recorded champion. Self-heals weeks the cron missed. The current (active) week is never touched.
+- Added per-week prize history (`weekly_prizes` table) so each backlogged week is crowned with *its own* correct prize instead of whatever the single `current_prize` row currently holds. `finalizeWeeklyWinner()` now resolves prize by week (falls back to `current_prize` for legacy weeks).
+- `/set-prize` now also writes `weekly_prizes` for its `week_label`, so normal weekly operation auto-populates history.
+- New endpoints: `POST /set-weekly-prize` (backfill/correct a specific week's prize without touching the live display) and `GET /weekly-prizes` (inspect history).
+- Catch-up **defers** any missed week that has no prize on record (logs it) rather than guessing — so a recovered week is never crowned with the wrong prize. Set the prize via `/set-weekly-prize`, then it finalizes on the next boot or via `/finalize-week`.
+- One-time migration seeds `weekly_prizes` from the live `current_prize` (captures W25 = Warplet Skin).
+
 ### Scene (src/teleport.ts)
 - Updated trigger entity world position from `x: 22.7, z: 2.9` to `x: 22.31, z: 3.81` to match actual portal location after estate expansion
 - Changed trigger layers from `1, 1` to `4, 4` to avoid conflicts with other triggers
-- **NOTE: Leaderboard portal trigger still not firing as of end of session — further debugging needed**
+- Leaderboard portal trigger now firing correctly — resolved during subsequent work
 
 ### Scene (src/index.ts)
 - Added temporary position logger system for debugging (should be removed before deployment)
@@ -54,6 +64,6 @@
 - Base parcel confirmed as `-131,89`
 - Scoreboard was reset for new competition period
 
-### Known Issues
-- Leaderboard portal teleport trigger not firing in preview — trigger box is in correct position but `"Leaderboard portal trigger fired!"` never appears in logs
-- Grass from adjacent parcels bleeding through the bullseye target area
+### Resolved
+- Leaderboard portal teleport trigger not firing — no longer reproduces; fixed or obviated by subsequent changes
+- Grass from adjacent parcels bleeding through the bullseye target area — no longer an issue

@@ -124,6 +124,41 @@
     <div class="result" id="prize-result"></div>
   </section>
 
+  <!-- SET WEEKLY PRIZE (per-week history / backfill) -->
+  <section>
+    <h3>Weekly Prize History</h3>
+    <p style="font-size:0.85rem; color:#888; margin-bottom:16px;">
+      Record or correct the prize for a <strong>specific week</strong> without changing the live
+      “This Week's Prize” display. Use this to backfill a missed week (e.g. a week the catch-up
+      deferred because it had no prize on record) before it is finalized.
+    </p>
+
+    <label for="weekly-prize-admin-key">Admin Key</label>
+    <input type="password" id="weekly-prize-admin-key" placeholder="Your ADMIN_KEY">
+
+    <label for="weekly-prize-reuse">Reuse a Previous Prize (optional)</label>
+    <select id="weekly-prize-reuse" onchange="reusePrize('weekly')"><option value="">— pick a past prize —</option></select>
+
+    <label for="weekly-prize-name">Prize Name</label>
+    <input type="text" id="weekly-prize-name" placeholder="e.g. Rare Wearable Hat">
+
+    <label for="weekly-prize-image">Prize Image URL</label>
+    <input type="text" id="weekly-prize-image" placeholder="https://..." oninput="previewWeeklyImage()">
+
+    <div class="preview-wrap" id="weekly-prize-preview-wrap">
+      <img id="weekly-prize-preview-img" src="" alt="Prize preview">
+      <p>Image preview</p>
+    </div>
+
+    <label for="weekly-prize-week">Week</label>
+    <input type="text" id="weekly-prize-week" placeholder="e.g. 2026-W26">
+
+    <button onclick="setWeeklyPrize()">Save Weekly Prize</button>
+    <button class="secondary" onclick="loadWeeklyPrizes()">View recorded weekly prizes</button>
+    <div class="result" id="weekly-prize-result"></div>
+    <div id="weekly-prizes-list" style="margin-top:14px; font-size:0.85rem; color:#aaa;"></div>
+  </section>
+
   <hr style="border-color:#333; margin: 0 0 28px;">
 
   <!-- ADD WINNER -->
@@ -245,7 +280,7 @@
         const json = await r.json()
         if (!json.valid || !json.prizes) return
         prizeCatalog = json.prizes
-        for (const prefix of ['prize', 'winner-prize']) {
+        for (const prefix of ['prize', 'winner-prize', 'weekly-prize']) {
           const sel = document.getElementById(prefix + '-reuse')
           if (!sel) continue
           sel.innerHTML = '<option value="">— pick a past prize —</option>'
@@ -261,17 +296,19 @@
 
     // Fill the name/image fields of a section from the selected catalog entry
     function reusePrize(section) {
-      const sel = document.getElementById(section === 'prize' ? 'prize-reuse' : 'winner-prize-reuse')
+      const ids = {
+        prize:  { reuse: 'prize-reuse',        name: 'prize-name',        image: 'prize-image' },
+        winner: { reuse: 'winner-prize-reuse', name: 'winner-prize-name', image: 'winner-prize-image' },
+        weekly: { reuse: 'weekly-prize-reuse', name: 'weekly-prize-name', image: 'weekly-prize-image' },
+      }[section]
+      if (!ids) return
+      const sel = document.getElementById(ids.reuse)
       const p = prizeCatalog[sel.value]
       if (!p) return
-      if (section === 'prize') {
-        document.getElementById('prize-name').value = p.prize_name
-        document.getElementById('prize-image').value = p.image_url || ''
-        previewImage()
-      } else {
-        document.getElementById('winner-prize-name').value = p.prize_name
-        document.getElementById('winner-prize-image').value = p.image_url || ''
-      }
+      document.getElementById(ids.name).value = p.prize_name
+      document.getElementById(ids.image).value = p.image_url || ''
+      if (section === 'prize') previewImage()
+      if (section === 'weekly') previewWeeklyImage()
     }
 
     async function setPrize() {
@@ -295,6 +332,63 @@
         if (json.valid) loadPrizeCatalog()
       } catch (e) {
         showResult('prize-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    function previewWeeklyImage() {
+      const url = document.getElementById('weekly-prize-image').value.trim()
+      const wrap = document.getElementById('weekly-prize-preview-wrap')
+      const img  = document.getElementById('weekly-prize-preview-img')
+      if (url) {
+        img.src = url
+        wrap.style.display = 'block'
+      } else {
+        wrap.style.display = 'none'
+      }
+    }
+
+    async function setWeeklyPrize() {
+      const body = {
+        admin_key:  document.getElementById('weekly-prize-admin-key').value.trim(),
+        week:       document.getElementById('weekly-prize-week').value.trim(),
+        prize_name: document.getElementById('weekly-prize-name').value.trim(),
+        image_url:  document.getElementById('weekly-prize-image').value.trim(),
+      }
+      if (!body.admin_key || !body.week || !body.prize_name) {
+        return showResult('weekly-prize-result', false, 'Admin key, week, and prize name are required.')
+      }
+      try {
+        const r = await fetch(BASE + '/set-weekly-prize', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        })
+        const json = await r.json()
+        showResult('weekly-prize-result', json.valid, json.valid ? '✅ ' + (json.message || 'Weekly prize saved!') : '❌ ' + json.error)
+        if (json.valid) { loadPrizeCatalog(); loadWeeklyPrizes() }
+      } catch (e) {
+        showResult('weekly-prize-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    async function loadWeeklyPrizes() {
+      const el = document.getElementById('weekly-prizes-list')
+      el.textContent = 'Loading...'
+      try {
+        const r = await fetch(BASE + '/weekly-prizes')
+        const json = await r.json()
+        if (!json.valid || !json.weeklyPrizes || json.weeklyPrizes.length === 0) {
+          el.textContent = 'No weekly prizes on record yet.'
+          return
+        }
+        el.innerHTML = json.weeklyPrizes.map(w =>
+          `<div style="padding:6px 0; border-bottom:1px solid #2a2a2a;">
+             <strong style="color:#f5c518">${w.week}</strong> — ${w.prize_name || '(none)'}
+             ${w.image_url ? ' <a href="'+w.image_url+'" target="_blank" style="color:#88aaff">img</a>' : ''}
+           </div>`
+        ).join('')
+      } catch (e) {
+        el.textContent = 'Error: ' + e.message
       }
     }
 

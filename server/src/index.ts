@@ -60,6 +60,24 @@ db.serialize(() => {
     image_url TEXT,
     last_used DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
+
+  // Per-week prize history: the prize awarded for each specific ISO week.
+  // finalizeWeeklyWinner reads this by week so a backlog of missed weeks each
+  // resolves to its own correct prize, instead of every week getting whatever
+  // the single current_prize row happens to hold at finalization time.
+  db.run(`CREATE TABLE IF NOT EXISTS weekly_prizes (
+    week TEXT PRIMARY KEY,
+    prize_name TEXT NOT NULL,
+    image_url TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+
+  // One-time migration: seed per-week history from the live current prize so a
+  // week whose prize was set before this table existed (e.g. the current week)
+  // still resolves correctly. INSERT OR IGNORE keeps it idempotent across boots.
+  db.run(`INSERT OR IGNORE INTO weekly_prizes (week, prize_name, image_url)
+    SELECT week_label, prize_name, image_url FROM current_prize
+    WHERE week_label IS NOT NULL AND week_label != ''`);
 });
 
 // Upsert a prize into the catalog (called whenever a prize is set or a winner
@@ -75,6 +93,30 @@ function rememberPrize(prizeName: string, imageUrl: string) {
     [prizeName, imageUrl || ''],
     (err: any) => {
       if (err) console.error('Error updating prize catalog:', err);
+    }
+  );
+}
+
+// Upsert the prize for a specific ISO week into per-week history. Called
+// whenever a prize is set for a week, so finalization can later resolve the
+// correct prize for that exact week.
+function rememberWeeklyPrize(
+  week: string,
+  prizeName: string,
+  imageUrl: string,
+  cb?: (err: any) => void
+) {
+  db.run(
+    `INSERT INTO weekly_prizes (week, prize_name, image_url, updated_at)
+     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(week) DO UPDATE SET
+       prize_name = excluded.prize_name,
+       image_url = excluded.image_url,
+       updated_at = CURRENT_TIMESTAMP`,
+    [week, prizeName, imageUrl || ''],
+    (err: any) => {
+      if (err) console.error('Error updating weekly prize:', err);
+      if (cb) cb(err);
     }
   );
 }
@@ -321,7 +363,47 @@ app.post('/set-prize', (req: any, res: any) => {
         return res.status(500).json({ valid: false, error: 'Failed to set prize' });
       }
       rememberPrize(prize_name, image_url || '');
+      // Record this prize against the week it belongs to so finalization can
+      // resolve it per-week even if that week is finalized much later.
+      rememberWeeklyPrize(week_label, prize_name, image_url || '');
       return res.status(200).json({ valid: true, message: 'Prize updated' });
+    }
+  );
+});
+
+// POST /set-weekly-prize — admin records/corrects the prize for a SPECIFIC week
+// in per-week history WITHOUT touching the live "this week's prize" display.
+// Use it to backfill a past/missed week before it is finalized.
+// Body: { week, prize_name, image_url, admin_key }
+app.post('/set-weekly-prize', (req: any, res: any) => {
+  const { week, prize_name, image_url, admin_key } = req.body || {};
+  const ADMIN_KEY = process.env.ADMIN_KEY || 'changeme';
+  if (admin_key !== ADMIN_KEY) {
+    return res.status(403).json({ valid: false, error: 'Unauthorized' });
+  }
+  if (!week || !prize_name) {
+    return res.status(400).json({ valid: false, error: 'Missing required fields: week, prize_name' });
+  }
+  rememberWeeklyPrize(week, prize_name, image_url || '', (err: any) => {
+    if (err) {
+      return res.status(500).json({ valid: false, error: 'Failed to set weekly prize' });
+    }
+    rememberPrize(prize_name, image_url || '');
+    return res.status(200).json({ valid: true, message: `Prize for ${week} recorded` });
+  });
+});
+
+// GET /weekly-prizes — all per-week prizes on record, newest week first
+app.get('/weekly-prizes', (req: any, res: any) => {
+  db.all(
+    `SELECT week, prize_name, image_url, updated_at FROM weekly_prizes ORDER BY week DESC`,
+    [],
+    (err: any, rows: any) => {
+      if (err) {
+        console.error('Error fetching weekly prizes:', err);
+        return res.status(500).json({ valid: false, error: 'Failed to fetch weekly prizes' });
+      }
+      return res.status(200).json({ valid: true, weeklyPrizes: rows });
     }
   );
 });
@@ -422,15 +504,54 @@ app.post('/delete-winner', (req: any, res: any) => {
 
 // ── Weekly Winner Automation ──────────────────────────────────────────────────
 
-// Helper: Get ISO week number from date
+// Helper: ISO-8601 week label ("2026-W25") for a date, computed in UTC.
+//
+// IMPORTANT: weeks are computed in JS, never via SQLite's
+// strftime('%G-W%V', ...). The bundled SQLite (3.44.x) predates the %G/%V
+// format codes (added in 3.46.0) and returns NULL for them, which silently
+// matched zero rows and broke every week-based query — no week ever finalized
+// or reset. All week filtering below uses isoWeekToRange() timestamp bounds
+// instead, which only rely on plain (well-supported) datetime comparison.
 function getISOWeek(date: Date): string {
-  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   const dayNum = d.getUTCDay() || 7;
   d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
   const week = Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  const year = d.getUTCFullYear();
-  return `${year}-W${String(week).padStart(2, '0')}`;
+  return `${d.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
+}
+
+// Format a Date as the 'YYYY-MM-DD HH:MM:SS' UTC string SQLite stores via
+// CURRENT_TIMESTAMP, so range bounds compare lexically against stored rows.
+function toSqlUTC(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  return `${d.getUTCFullYear()}-${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ` +
+    `${p(d.getUTCHours())}:${p(d.getUTCMinutes())}:${p(d.getUTCSeconds())}`;
+}
+
+// Convert an ISO week label ("2026-W25") to the half-open UTC datetime range
+// [Monday 00:00:00, next Monday 00:00:00) the week spans. Returns null for a
+// malformed label.
+function isoWeekToRange(week: string): { start: string; end: string } | null {
+  const m = /^(\d{4})-W(\d{2})$/.exec(week);
+  if (!m) return null;
+  const year = parseInt(m[1], 10);
+  const wk = parseInt(m[2], 10);
+  // Monday of ISO week 1 is the Monday of the week containing Jan 4.
+  const jan4 = new Date(Date.UTC(year, 0, 4));
+  const jan4Day = jan4.getUTCDay() || 7;
+  const week1Monday = new Date(jan4);
+  week1Monday.setUTCDate(jan4.getUTCDate() - (jan4Day - 1));
+  const start = new Date(week1Monday);
+  start.setUTCDate(week1Monday.getUTCDate() + (wk - 1) * 7);
+  const end = new Date(start);
+  end.setUTCDate(start.getUTCDate() + 7);
+  return { start: toSqlUTC(start), end: toSqlUTC(end) };
+}
+
+// Parse a stored 'YYYY-MM-DD HH:MM:SS' UTC timestamp into a Date.
+function parseSqlUTC(ts: string): Date {
+  return new Date(ts.replace(' ', 'T') + 'Z');
 }
 
 // The actual finalization logic — separate from HTTP so cron can call it directly
@@ -438,6 +559,12 @@ function getISOWeek(date: Date): string {
 function finalizeWeeklyWinner(callback: (err: string | null, result?: any) => void, weekOverride?: string) {
   const targetWeek = weekOverride || getISOWeek(new Date());
   console.log(`⏰ Finalizing week: ${targetWeek}`);
+
+  const range = isoWeekToRange(targetWeek);
+  if (!range) {
+    console.error(`Invalid week label: ${targetWeek}`);
+    return callback(`Invalid week label: ${targetWeek}`);
+  }
 
   // Get all past winners to exclude them
   db.all(`SELECT wallet FROM winners`, [], (err: any, pastWinners: any) => {
@@ -448,18 +575,20 @@ function finalizeWeeklyWinner(callback: (err: string | null, result?: any) => vo
 
     const excludedWallets = pastWinners.map((w: any) => w.wallet);
 
-    // Get all scores from the target week, ordered by score (lowest = best), excluding past winners
+    // Get all scores from the target week, ordered by score (lowest = best),
+    // excluding past winners. Week membership is a UTC timestamp range rather
+    // than strftime (see getISOWeek note).
     const placeholders = excludedWallets.length > 0 ? excludedWallets.map(() => '?').join(',') : "'nonexistent'";
     const query = `
       SELECT wallet, name, score, timestamp
       FROM scores
-      WHERE strftime('%G-W%V', timestamp) = ?
+      WHERE timestamp >= ? AND timestamp < ?
         AND wallet NOT IN (${placeholders})
       ORDER BY score ASC
       LIMIT 1
     `;
 
-    db.get(query, [targetWeek, ...excludedWallets], (err: any, topScore: any) => {
+    db.get(query, [range.start, range.end, ...excludedWallets], (err: any, topScore: any) => {
       if (err) {
         console.error('Error fetching top scorer:', err);
         return callback('Failed to fetch scores');
@@ -470,14 +599,9 @@ function finalizeWeeklyWinner(callback: (err: string | null, result?: any) => vo
         return callback(null, { message: `No eligible winner for week ${targetWeek}` });
       }
 
-      // Get current prize
-      db.get(`SELECT prize_name, image_url FROM current_prize WHERE id = 1`, [], (err: any, prize: any) => {
-        if (err) {
-          console.error('Error fetching current prize:', err);
-          return callback('Failed to fetch prize');
-        }
-
-        // Record the winner
+      // Records the winner with the resolved prize, then clears the week's
+      // scores. Shared by both the per-week and fallback prize paths below.
+      const recordWinnerWithPrize = (prize: any) => {
         db.run(
           `INSERT INTO winners (wallet, name, score, week, prize_name, prize_image_url)
            VALUES (?, ?, ?, ?, ?, ?)`,
@@ -488,12 +612,12 @@ function finalizeWeeklyWinner(callback: (err: string | null, result?: any) => vo
               return callback('Failed to record winner');
             }
 
-            console.log(`🏆 Winner recorded: ${topScore.name} (${topScore.score}m) for week ${targetWeek}`);
+            console.log(`🏆 Winner recorded: ${topScore.name} (${topScore.score}m) for week ${targetWeek} [prize: ${prize?.prize_name || '(none)'}]`);
 
             // Clear all scores from the target week (fresh leaderboard for next week)
             db.run(
-              `DELETE FROM scores WHERE strftime('%G-W%V', timestamp) = ?`,
-              [targetWeek],
+              `DELETE FROM scores WHERE timestamp >= ? AND timestamp < ?`,
+              [range.start, range.end],
               function(this: any, err: any) {
                 if (err) {
                   console.error('Error clearing scores:', err);
@@ -512,9 +636,124 @@ function finalizeWeeklyWinner(callback: (err: string | null, result?: any) => vo
             );
           }
         );
+      };
+
+      // Resolve the prize for THIS specific week from per-week history first;
+      // fall back to the live current prize only for legacy weeks that predate
+      // weekly_prizes (so each backlogged week still gets its own correct prize).
+      db.get(`SELECT prize_name, image_url FROM weekly_prizes WHERE week = ?`, [targetWeek], (err: any, weeklyPrize: any) => {
+        if (err) {
+          console.error('Error fetching weekly prize:', err);
+          return callback('Failed to fetch prize');
+        }
+        if (weeklyPrize) return recordWinnerWithPrize(weeklyPrize);
+        db.get(`SELECT prize_name, image_url FROM current_prize WHERE id = 1`, [], (err2: any, prize: any) => {
+          if (err2) {
+            console.error('Error fetching current prize:', err2);
+            return callback('Failed to fetch prize');
+          }
+          recordWinnerWithPrize(prize);
+        });
       });
     });
   });
+}
+
+// Catch-up safety net: on every startup, finalize any PAST week that has
+// scores on the board but no champion recorded yet. node-cron only fires while
+// the process is alive and has NO missed-run recovery, so a redeploy, restart,
+// crash, or sleep across the Sunday 23:59 UTC tick would otherwise skip a week
+// permanently (this is exactly what happened to W25 and W26). Running this on
+// boot closes that gap: any week the cron missed gets finalized the next time
+// the server comes up. The current (still-active) week is never touched, and a
+// missed week is only finalized once its prize is on record (see deferral
+// below) so each week is crowned with its own correct prize.
+function catchUpMissedWeeks() {
+  const currentWeek = getISOWeek(new Date());
+
+  // Distinct PAST weeks that still have scores sitting on the board. Weeks are
+  // derived in JS (not strftime — see getISOWeek note); week strings are
+  // zero-padded ("2026-W05"), so lexical `<` orders them correctly.
+  db.all(
+    `SELECT timestamp FROM scores`,
+    [],
+    (err: any, scoreRows: any) => {
+      if (err) {
+        console.error('Catch-up: failed to read score weeks:', err);
+        return;
+      }
+
+      const pastWeeks = Array.from(
+        new Set(
+          (scoreRows as any[])
+            .map((r: any) => r.timestamp)
+            .filter((ts: any) => typeof ts === 'string' && ts)
+            .map((ts: string) => getISOWeek(parseSqlUTC(ts)))
+            .filter((w: string) => w < currentWeek)
+        )
+      ).sort() as string[];
+
+      // Weeks that already have a champion recorded — never re-finalize these.
+      db.all(`SELECT DISTINCT week FROM winners`, [], (err2: any, wonRows: any) => {
+        if (err2) {
+          console.error('Catch-up: failed to read winners:', err2);
+          return;
+        }
+
+        // Weeks that have a prize on record — a backlogged week is only
+        // finalized once its prize is known, so a missed week can never be
+        // crowned with a guessed/wrong prize. Weeks without one are deferred
+        // until an admin sets it via /set-weekly-prize (then the next boot or a
+        // manual /finalize-week picks them up).
+        db.all(`SELECT week FROM weekly_prizes`, [], (err3: any, prizeRows: any) => {
+          if (err3) {
+            console.error('Catch-up: failed to read weekly prizes:', err3);
+            return;
+          }
+
+          const finalized = new Set((wonRows as any[]).map((r: any) => r.week));
+          const havePrize = new Set((prizeRows as any[]).map((r: any) => r.week));
+          const candidates = pastWeeks.filter((w: string) => !finalized.has(w));
+
+          const ready = candidates.filter((w: string) => havePrize.has(w));
+          const deferred = candidates.filter((w: string) => !havePrize.has(w));
+
+          if (deferred.length > 0) {
+            console.log(`⏸️  Catch-up: ${deferred.length} week(s) deferred (no prize on record) — set one via /set-weekly-prize then redeploy/restart: ${deferred.join(', ')}`);
+          }
+
+          if (ready.length === 0) {
+            console.log('✅ Catch-up: no ready weeks to finalize');
+            return;
+          }
+
+          console.log(`🔄 Catch-up: ${ready.length} missed week(s) to finalize: ${ready.join(', ')}`);
+
+          // Finalize oldest-first, strictly one at a time — each finalization
+          // deletes its own week's scores, so the calls must not overlap.
+          let i = 0;
+          const finalizeNext = () => {
+            if (i >= ready.length) {
+              console.log('✅ Catch-up: complete');
+              return;
+            }
+            const week = ready[i++];
+            finalizeWeeklyWinner((err4: string | null, result?: any) => {
+              if (err4) {
+                console.error(`❌ Catch-up: error finalizing ${week}: ${err4}`);
+              } else if (result?.winner) {
+                console.log(`🏆 Catch-up: ${result.winner.name} won ${week}`);
+              } else {
+                console.log(`⚠️  Catch-up: ${result?.message || `nothing to finalize for ${week}`}`);
+              }
+              finalizeNext();
+            }, week);
+          };
+          finalizeNext();
+        });
+      });
+    }
+  );
 }
 
 // POST /finalize-week — admin endpoint to manually trigger weekly finalization
@@ -565,13 +804,18 @@ app.get('/debug/scores', (req: any, res: any) => {
     return res.status(403).json({ error: 'Unauthorized' });
   }
   db.all(
-    `SELECT wallet, name, score, timestamp, strftime('%G-W%V', timestamp) as week FROM scores ORDER BY timestamp DESC`,
+    `SELECT wallet, name, score, timestamp FROM scores ORDER BY timestamp DESC`,
     [],
     (err: any, rows: any) => {
       if (err) {
         return res.status(500).json({ error: err.message });
       }
-      res.status(200).json({ scores: rows });
+      // Compute the ISO week in JS (SQLite here can't — see getISOWeek note).
+      const scores = (rows as any[]).map((r: any) => ({
+        ...r,
+        week: r.timestamp ? getISOWeek(parseSqlUTC(r.timestamp)) : null,
+      }));
+      res.status(200).json({ scores });
     }
   );
 });
@@ -588,6 +832,9 @@ app.listen(PORT, HOST, () => {
   console.log(`📊 Database: leaderboard.db`);
   console.log(`🌐 Health check: http://0.0.0.0:${PORT}/health`);
   console.log(`⏰ Weekly winner scheduler initialized (every Sunday 23:59 UTC)`);
+
+  // Self-heal any weeks the in-process cron missed while the server was down.
+  catchUpMissedWeeks();
 });
 
 // Schedule weekly winner finalization
