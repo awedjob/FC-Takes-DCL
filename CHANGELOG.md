@@ -59,6 +59,10 @@
 ### Scene (src/index.ts)
 - Added temporary position logger system for debugging (should be removed before deployment)
 
+### Scene (scene.json)
+- Added `peer.decentraland.org` and `pink-ill-snipe-862.mypinata.cloud` to `allowedMediaHostnames`. The combined board's "THIS WEEK'S PRIZE" thumbnail (and the Winners Circle prize thumbnails) were not displaying because the prize image URLs are hosted on `peer.decentraland.org`, which was not whitelisted — SDK7 blocks remote textures whose hostname is not in `allowedMediaHostnames`.
+- **⚠️ IMPORTANT — adding prize images from a NEW host:** SDK7 whitelists by *hostname*, not by content/CID. Any prize image served from a hostname not already in `scene.json` → `allowedMediaHostnames` will silently fail to load on the board. When you introduce a prize image from a new host, you MUST add that hostname to `allowedMediaHostnames` **and redeploy the scene** (`npm run deploy -- --target https://peer-ec1.decentraland.org`). Currently whitelisted image hosts: `peer.decentraland.org`, `pink-ill-snipe-862.mypinata.cloud`. To avoid repeated whitelisting, prefer pinning images to IPFS and serving them through the already-whitelisted Pinata dedicated gateway (`https://pink-ill-snipe-862.mypinata.cloud/ipfs/<CID>`) — the gateway hostname stays constant, so new CIDs need no scene change. (Note: DCL needs an HTTPS gateway URL, not a bare `ipfs://<CID>`.)
+
 ### Infrastructure
 - Estate expanded from 8 to 13 parcels
 - Base parcel confirmed as `-131,89`

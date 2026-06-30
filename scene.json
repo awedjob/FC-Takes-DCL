@@ -67,7 +67,9 @@
     "ALLOW_MEDIA_HOSTNAMES"
   ],
   "allowedMediaHostnames": [
-    "fartarget-production.up.railway.app"
+    "fartarget-production.up.railway.app",
+    "peer.decentraland.org",
+    "pink-ill-snipe-862.mypinata.cloud"
   ],
   "featureToggles": {
     "voiceChat": "enabled",
