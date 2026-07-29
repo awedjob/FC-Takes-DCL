@@ -255,6 +255,38 @@
     <div class="result" id="uwp-result"></div>
   </section>
 
+  <!-- LOOK UP WINNERS BY WEEK(S) -->
+  <section>
+    <h3>Look Up Winners by Week(s)</h3>
+    <p style="font-size:0.85rem; color:#888; margin-bottom:16px;">
+      Query winners from specific weeks. See wallet addresses, scores, and prize info at a glance.
+      Enter weeks separated by commas (e.g. <code>2026-W30, 2026-W29, 2026-W28</code>) or leave blank to see all winners.
+    </p>
+
+    <label for="lookup-weeks">Week(s) (comma-separated, or blank for all)</label>
+    <input type="text" id="lookup-weeks" placeholder="e.g. 2026-W30, 2026-W29, 2026-W28" value="">
+
+    <button onclick="lookupWinnersByWeeks()">Look Up Winners</button>
+    <div class="result" id="lookup-result"></div>
+
+    <div id="lookup-winners-table" style="margin-top:20px; display:none;">
+      <table style="width:100%; border-collapse:collapse; font-size:0.85rem;">
+        <thead>
+          <tr style="border-bottom:2px solid #f5c518; color:#f5c518;">
+            <th style="text-align:left; padding:8px 4px;">Week</th>
+            <th style="text-align:left; padding:8px 4px;">Name</th>
+            <th style="text-align:right; padding:8px 4px;">Score</th>
+            <th style="text-align:left; padding:8px 4px;">Prize</th>
+            <th style="text-align:left; padding:8px 4px;">Wallet</th>
+          </tr>
+        </thead>
+        <tbody id="lookup-winners-tbody" style="color:#e0e0e0;">
+        </tbody>
+      </table>
+      <p style="font-size:0.75rem; color:#555; margin-top:12px;">Wallets are clickable for copying.</p>
+    </div>
+  </section>
+
   <!-- VIEW CURRENT PRIZE -->
   <section>
     <h3>Current Prize (live)</h3>
@@ -609,6 +641,65 @@
       } catch (e) {
         showResult('clear-result', false, '❌ Network error: ' + e.message)
       }
+    }
+
+    async function lookupWinnersByWeeks() {
+      const weeksStr = document.getElementById('lookup-weeks').value.trim()
+      const weeks = weeksStr ? weeksStr.split(',').map(w => w.trim()).filter(w => w) : []
+
+      try {
+        const r = await fetch(BASE + '/lookup-winners', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ weeks })
+        })
+        const json = await r.json()
+        if (!json.valid) {
+          return showResult('lookup-result', false, '❌ ' + json.error)
+        }
+
+        const winners = json.winners || []
+        if (winners.length === 0) {
+          showResult('lookup-result', true, '✅ No winners found for those weeks.')
+          document.getElementById('lookup-winners-table').style.display = 'none'
+          return
+        }
+
+        // Populate table
+        const tbody = document.getElementById('lookup-winners-tbody')
+        tbody.innerHTML = winners.map(w => `
+          <tr style="border-bottom:1px solid #2a2a2a;">
+            <td style="padding:8px 4px; color:#f5c518;">${w.week || '—'}</td>
+            <td style="padding:8px 4px;">${w.name || '—'}</td>
+            <td style="padding:8px 4px; text-align:right;">${w.score !== null ? w.score.toFixed(3) : '—'}</td>
+            <td style="padding:8px 4px;">${w.prize_name || '—'}</td>
+            <td style="padding:8px 4px;">
+              <code style="background:#111; padding:2px 6px; border-radius:3px; cursor:pointer; color:#88aaff;" onclick="copyToClipboard('${w.wallet}', this)">
+                ${w.wallet ? w.wallet.substring(0, 10) + '...' : '—'}
+              </code>
+            </td>
+          </tr>
+        `).join('')
+
+        document.getElementById('lookup-winners-table').style.display = 'table'
+        showResult('lookup-result', true, `✅ Found ${winners.length} winner${winners.length !== 1 ? 's' : ''}.`)
+      } catch (e) {
+        showResult('lookup-result', false, '❌ Network error: ' + e.message)
+      }
+    }
+
+    function copyToClipboard(text, el) {
+      navigator.clipboard.writeText(text).then(() => {
+        const orig = el.textContent
+        el.textContent = 'Copied!'
+        el.style.color = '#6fcf6f'
+        setTimeout(() => {
+          el.textContent = orig
+          el.style.color = '#88aaff'
+        }, 2000)
+      }).catch(() => {
+        alert('Failed to copy. Wallet: ' + text)
+      })
     }
   </script>
 

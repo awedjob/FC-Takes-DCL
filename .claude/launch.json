@@ -1,0 +1,25 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "heatmap-server",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "C:\\Users\\AwedJob\\LAND-Intgy", "-p", "8888", "-c-1"],
+      "port": 8888,
+      "autoPort": true
+    },
+    {
+      "name": "cbd-map-server",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["http-server", "C:\\Users\\AwedJob\\CBD-Map", "-p", "8935", "-c-1"],
+      "port": 8935,
+      "autoPort": true
+    },
+    {
+      "name": "d3js-dev",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "C:\\D3JS", "run", "dev"],
+      "port": 5173
+    }
+  ]
+}

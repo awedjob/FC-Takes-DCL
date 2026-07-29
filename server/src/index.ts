@@ -817,6 +817,32 @@ app.post('/finalize-week', (req: any, res: any) => {
 
 // ── End Weekly Winner Automation ──────────────────────────────────────────────
 
+// POST /lookup-winners — query winners by week(s) for admin prize awarding
+// Body: { weeks: ["2026-W30", "2026-W29"] } — if empty array or not provided, returns all winners
+app.post('/lookup-winners', (req: any, res: any) => {
+  const { weeks } = req.body || {};
+  const weekList = (weeks && Array.isArray(weeks) && weeks.length > 0) ? weeks : null;
+
+  let query = `SELECT wallet, name, score, week, prize_name FROM winners`;
+  let params: any[] = [];
+
+  if (weekList) {
+    const placeholders = weekList.map(() => '?').join(',');
+    query += ` WHERE week IN (${placeholders})`;
+    params = weekList;
+  }
+
+  query += ` ORDER BY week DESC`;
+
+  db.all(query, params, (err: any, rows: any) => {
+    if (err) {
+      console.error('Error fetching winners:', err);
+      return res.status(500).json({ valid: false, error: 'Failed to fetch winners' });
+    }
+    return res.status(200).json({ valid: true, winners: rows || [] });
+  });
+});
+
 // POST /clear-scores — admin tool to clear all scores from the leaderboard
 // Requires admin_key in body for safety (prevents accidental clears)
 app.post('/clear-scores', (req: any, res: any) => {
